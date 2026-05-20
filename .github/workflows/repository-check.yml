@@ -1,0 +1,35 @@
+name: Repository Check
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  repository-check:
+    name: Check required coursework files
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check required documentation files
+        run: |
+          test -f README.md
+          test -f docs/game-concept.md
+          test -f docs/development-workflow.md
+          test -f docs/asset-credits.md
+          test -f docs/testing-log.md
+          test -f docs/daily-scrum.md
+
+      - name: Check Unity project folder placeholder or project
+        run: |
+          if [ -d "ShadowPath" ]; then
+            echo "ShadowPath folder exists."
+          else
+            echo "ShadowPath folder has not been added yet. This is expected before Unity project integration."
+          fi
