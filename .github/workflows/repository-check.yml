@@ -20,11 +20,11 @@ jobs:
       - name: Check required documentation files
         run: |
           test -f README.md
-          test -f docs/game-concept.md
-          test -f docs/development-workflow.md
-          test -f docs/asset-credits.md
-          test -f docs/testing-log.md
-          test -f docs/daily-scrum.md
+          test -f docs/Game_Concept.md
+          test -f docs/Development_Workflow.md
+          test -f docs/Asset_Credits.md
+          test -f docs/Testing_Log.md
+          test -f docs/Daily_Scrum.md
 
       - name: Check Unity project folder placeholder or project
         run: |
