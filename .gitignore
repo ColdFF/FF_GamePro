@@ -1,4 +1,9 @@
+# =========================================================
 # Unity generated folders
+# Ignore Unity caches and generated folders in any Unity
+# project stored inside this coursework repository.
+# =========================================================
+
 **/[Ll]ibrary/
 **/[Tt]emp/
 **/[Oo]bj/
@@ -6,13 +11,39 @@
 **/[Bb]uilds/
 **/[Ll]ogs/
 **/[Uu]ser[Ss]ettings/
+**/[Mm]emoryCaptures/
+**/[Rr]ecordings/
+**/.utmp/
 
-# Visual Studio / Rider / VS Code
-**/.vs/
-**/.idea/
-**/.vscode/
+# =========================================================
+# Unity generated files
+# =========================================================
+
+*.log
+sysinfo.txt
+mono_crash.*
+
+# Unity package / build exports
+*.apk
+*.aab
+*.app
+*.unitypackage
+*.unitypackage.meta
+
+# Blender backup files imported by Unity
+*.blend1
+*.blend1.meta
+
+# =========================================================
+# Unity generated IDE and project files
+# =========================================================
+
 *.csproj
+*.unityproj
 *.sln
+*.slnx
+*.suo
+*.tmp
 *.user
 *.userprefs
 *.pidb
@@ -23,10 +54,56 @@
 *.opendb
 *.VC.db
 
+# Unity generated meta files for generated debug files
+*.pidb.meta
+*.pdb.meta
+*.mdb.meta
+
+# =========================================================
+# IDE folders
+# =========================================================
+
+**/.vs/
+**/.idea/
+**/.vscode/
+**/.gradle/
+**/ExportedObj/
+**/.consulo/
+
+# Rider personal settings
+*.DotSettings.user
+
+# =========================================================
+# Unity test and generated cache files
+# =========================================================
+
+**/[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
+**/[Aa]ssets/[Ss]ceneDependencyCache*
+
+# =========================================================
+# Addressables generated data
+# Keep these rules for future Unity package use.
+# =========================================================
+
+**/ServerData/
+**/[Aa]ssets/StreamingAssets/aa*
+**/[Aa]ssets/AddressableAssetsData/link.xml*
+**/[Aa]ssets/Addressables_Temp*
+**/[Aa]ssets/AddressableAssetsData/*/*.bin*
+
+# =========================================================
+# Visual Scripting generated files
+# =========================================================
+
+**/[Aa]ssets/Unity.VisualScripting.Generated/VisualScripting.Flow/UnitOptions.db
+**/[Aa]ssets/Unity.VisualScripting.Generated/VisualScripting.Flow/UnitOptions.db.meta
+**/[Aa]ssets/Unity.VisualScripting.Generated/VisualScripting.Core/Property Providers
+**/[Aa]ssets/Unity.VisualScripting.Generated/VisualScripting.Core/Property Providers.meta
+
+# =========================================================
 # OS files
+# =========================================================
+
 .DS_Store
 Thumbs.db
-
-# Unity crash / memory files
-sysinfo.txt
-**/[Mm]emoryCaptures/
+Desktop.ini
