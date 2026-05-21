@@ -10,7 +10,26 @@ The player controls a stickman character in a side-view platform environment. Un
 
 The intended player experience is thoughtful and experimental: observe the scene, adjust the light, test the shadow path, and move carefully toward the level goal.
 
-The main coursework game will be developed in `ShadowPath/`. Detailed progress, testing notes, asset credits, and design changes will be documented in the `docs/` folder.
+The active coursework Unity project is stored in `ShadowPath/`. Detailed progress, testing notes, asset credits, and development records are documented in the `docs/` folder.
+
+## How to Run ShadowPath
+
+1. Clone or download this repository.
+2. Open Unity Hub.
+3. Add the `ShadowPath/` folder as a Unity project.
+4. Open the project with Unity `2022.3 LTS`.
+5. Open the scene `Assets/Scenes/Level01_Tutorial.unity`.
+6. Press Play in the Unity Editor.
+
+## Controls
+
+| Action | Input |
+| --- | --- |
+| Move left | `A` |
+| Move right | `D` |
+| Run | `Shift` + `A` / `D` |
+| Jump | `W` or `Space` |
+| Adjust light direction | Arrow keys |
 
 ## Repository Structure
 
@@ -20,8 +39,8 @@ The main coursework game will be developed in `ShadowPath/`. Detailed progress, 
 | `SolarSystem/` | Solar system Unity class demo. |
 | `Lecture_Q&A/` | In-class questions, answers, and discussion work. |
 | `Welldone!!_post/` | In-class group activity post. |
-| `ShadowPath/` | Main coursework game project. This will contain the active Unity project. |
-| `docs/` | Planning, testing notes, asset credits, accessibility notes, and development reflections. |
+| `ShadowPath/` | Main coursework Unity game project. |
+| `docs/` | Planning, testing notes, asset credits, agile records, and development reflections. |
 | `Prototype.png` | Early concept sketch kept as process evidence, although the current game design has changed. |
 
 ## Development Approach
@@ -47,9 +66,19 @@ This repository is maintained to show:
 - Responsible asset use and credit records.
 - Reflection on design and technical decisions.
 
+## Documentation
+
+| Document | Purpose |
+| --- | --- |
+| `docs/Game_Concept.md` | Game concept, design goals, scope, and risks. |
+| `docs/Development_Workflow.md` | Development workflow and repository process. |
+| `docs/Asset_Credits.md` | External asset sources, licences, and credit records. |
+| `docs/Testing_Log.md` | Feature tests, bug checks, and retesting evidence. |
+| `docs/Daily_Scrum.md` | Short agile-style progress reflections. |
+
 ## Asset Credits
 
-External assets will be recorded in `docs/asset-credits.md`, including source page, creator, licence, access date, and any edits made.
+External assets are recorded in `docs/Asset_Credits.md`, including source page, creator, licence, access date, and any edits made.
 
 ## Build Information
 
