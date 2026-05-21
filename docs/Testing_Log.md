@@ -55,3 +55,30 @@ Each test entry should include:
 | Expected result | The arrow keys should adjust the light direction and visibly change the projected shadow position or shape. |
 | Actual result | Directional light control works in the current shadow test setup, and the projected shadow changes visibly. |
 | Status | Pass |
+
+### 2026-05-22 - Tutorial Scene Project Check
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Initial `Level01_Tutorial` scene structure |
+| Expected result | The prototype scene should contain a start platform, shadow-casting blocks, a shadow screen, player movement, and an end platform layout for the tutorial route. |
+| Actual result | The current scene contains the first tutorial level structure and can be opened from the imported Unity project in the repository. |
+| Status | Pass |
+
+### 2026-05-22 - Projected Shadow Silhouette Collision Test
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Generated shadow silhouette collision |
+| Expected result | The player should be able to land on the projected black shadow silhouette used as the playable route. |
+| Actual result | The player can stand on the current projected shadow silhouette colliders in the tutorial prototype. |
+| Status | Pass |
+
+### 2026-05-22 - Moving Shadow Passenger Behaviour Retest
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Player behaviour while the projected shadow changes with light adjustment |
+| Expected result | When the player stands on a shadow path and the light direction changes, the player should follow the changing support edge without being pushed unnaturally toward the shadow edge. |
+| Actual result | An earlier version caused visible drift on later shadow silhouettes. The projected shadow carry logic was refined to follow the relevant upper shadow support edge more accurately, and the player now follows the moving shadow path more naturally in the current test. |
+| Status | Fixed |
