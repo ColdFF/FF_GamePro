@@ -33,3 +33,11 @@ Each entry should briefly answer:
 | What was completed? | Built and refined the first `ShadowPath` tutorial prototype structure, including the start platform, shadow-casting blocks, projected shadow silhouettes, player movement on the shadow route, and initial light-driven shadow behaviour. Imported the active Unity project into the GitHub repository through a branch, pull request, and repository check workflow. |
 | What will be worked on next? | Update the Kanban progress for the Unity project integration work, then continue improving the first tutorial level by refining its game flow, goal logic, restart behaviour, and player understanding of the shadow mechanic. |
 | Blockers, risks, or problems | The core shadow-platform mechanic is now working in the current prototype, but it still needs further playtesting and polish at different light angles so that the tutorial level feels clear, fair, and stable. |
+
+### 2026-05-23 - Tutorial Lighting and Stage Presentation Iteration
+
+| Question | Notes |
+| --- | --- |
+| What was completed? | Refined the first tutorial level presentation by adding a stage-inspired wash light effect, a soft spotlight cookie, a static spotlight prop, level boundaries, and improved arrow-key light-control meaning so the player interaction feels more connected to shaping shadows through light. The lighting iteration was committed through a feature branch, pull request, CI check, and merge workflow. |
+| What will be worked on next? | Record the new external lighting asset and testing evidence in the project documentation, then continue refining the first tutorial level gameplay flow and decide the next improvement needed for player understanding and level completion. |
+| Blockers, risks, or problems | The visual atmosphere is becoming stronger, but the tutorial still needs careful balancing so lighting presentation, shadow readability, and gameplay clarity support each other instead of competing for attention. |

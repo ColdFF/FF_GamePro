@@ -82,3 +82,30 @@ Each test entry should include:
 | Expected result | When the player stands on a shadow path and the light direction changes, the player should follow the changing support edge without being pushed unnaturally toward the shadow edge. |
 | Actual result | An earlier version caused visible drift on later shadow silhouettes. The projected shadow carry logic was refined to follow the relevant upper shadow support edge more accurately, and the player now follows the moving shadow path more naturally in the current test. |
 | Status | Fixed |
+
+### 2026-05-23 - Tutorial Boundary Test
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Left and right movement boundaries in the tutorial level |
+| Expected result | The player should not fall out of the level by continuously running left from the start platform or right past the end platform. |
+| Actual result | Boundary colliders stop the player from leaving the tutorial route at the outer start and end sides. |
+| Status | Pass |
+
+### 2026-05-23 - Stage Wash Lighting Presentation Test
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Tutorial level stage wash lighting and spotlight cookie |
+| Expected result | The shadow screen should show a controlled theatrical wash effect that supports the light-and-shadow atmosphere in Play Mode. |
+| Actual result | The stage wash light and soft cookie texture render on the shadow screen and improve the tutorial level lighting presentation. |
+| Status | Pass |
+
+### 2026-05-23 - Light Input Meaning Retest
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Arrow-key light adjustment meaning |
+| Expected result | Arrow-key input should feel like adjusting the light direction, with the projected shadow path responding to that light change. |
+| Actual result | The light-control mapping was updated so the shadow response now better matches the intended player interaction of moving light to shape the path. |
+| Status | Pass |
