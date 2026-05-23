@@ -1,0 +1,2 @@
+**Next Action for Session 4:** 
+By session 4, I will refine the first ShadowPath tutorial level so the player can use light adjustment to create a playable shadow route, and I will show evidence by pushing the updated Unity scene, light-control scripts, testing notes, and GitHub Kanban progress to the repository.
