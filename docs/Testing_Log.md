@@ -109,3 +109,57 @@ Each test entry should include:
 | Expected result | Arrow-key input should feel like adjusting the light direction, with the projected shadow path responding to that light change. |
 | Actual result | The light-control mapping was updated so the shadow response now better matches the intended player interaction of moving light to shape the path. |
 | Status | Pass |
+
+### 2026-05-25 - Projected Shadow Edge Generation Test
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Generated projected shadow edge platforms |
+| Expected result | The system should generate visible edge strips from the projected shadow outline so the shadow shape can be tested as a traversal route. |
+| Actual result | Green debug edge strips are generated from the projected shadow outline and update when the light direction changes. The edge-based approach gives clearer control over which parts of the shadow can support the player. |
+| Status | Pass |
+
+### 2026-05-25 - Shadow Edge Alignment Retest
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Visual alignment between generated green edge strips and the projected shadow shape |
+| Expected result | Generated edge visuals should follow the projected shadow outline closely enough for debugging and level design. |
+| Actual result | Earlier generated points and edges did not fully match the visible shadow outline. After tuning the edge generation and screen-space conversion, the green edge strips now follow the moving shadow outline more consistently. |
+| Status | Fixed |
+
+### 2026-05-25 - Walkable and Steep Shadow Edge Behaviour Test
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Walkable shadow edges and steep sliding shadow edges |
+| Expected result | Suitable upward-facing shadow edges should behave as stable platforms, while steep or near-vertical edges should not allow the player to climb or stick. |
+| Actual result | Walkable shadow edges support standing, walking, running, and jumping. Steep or near-vertical shadow edges use a no-friction physics material so the player slides down instead of sticking to the edge. |
+| Status | Pass |
+
+### 2026-05-25 - Player Jump Landing Retest
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Jump landing and grounded detection on normal platforms and shadow edge platforms |
+| Expected result | The player should land responsively after jumping and should not appear to hover slowly before returning to the grounded state. |
+| Actual result | The player ground check was tuned so landing feels more responsive. The earlier slow landing behaviour was reduced by requiring the player feet to be close enough to the detected ground before setting the grounded state. |
+| Status | Fixed |
+
+### 2026-05-25 - Wall and Steep Edge Sticking Retest
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Player collision behaviour against vertical walls and steep shadow edges |
+| Expected result | The player should slide or fall away from steep surfaces instead of sticking, climbing, or being held in place by horizontal input. |
+| Actual result | Wall and steep-edge sticking were reduced through no-friction material use and movement safeguards. The player no longer remains attached to boundary walls during jump and horizontal input tests. |
+| Status | Fixed |
+
+### 2026-05-25 - Moving Shadow Edge Carry Retest
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Player behaviour while standing on a shadow edge as the light direction changes |
+| Expected result | When the player is grounded on a valid shadow edge, the player should follow the moving support edge without large snapping or mismatching to another shadow edge. |
+| Actual result | The shadow edge carry logic was refined so the player is carried only when grounded on a matching walkable generated edge. The follow behaviour is more stable during light adjustment, although some level-specific parameters may still require tuning when shadows move quickly. |
+| Status | Fixed |
