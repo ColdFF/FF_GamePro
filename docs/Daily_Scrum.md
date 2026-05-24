@@ -41,3 +41,11 @@ Each entry should briefly answer:
 | What was completed? | Refined the first tutorial level presentation by adding a stage-inspired wash light effect, a soft spotlight cookie, a static spotlight prop, level boundaries, and improved arrow-key light-control meaning so the player interaction feels more connected to shaping shadows through light. The lighting iteration was committed through a feature branch, pull request, CI check, and merge workflow. |
 | What will be worked on next? | Record the new external lighting asset and testing evidence in the project documentation, then continue refining the first tutorial level gameplay flow and decide the next improvement needed for player understanding and level completion. |
 | Blockers, risks, or problems | The visual atmosphere is becoming stronger, but the tutorial still needs careful balancing so lighting presentation, shadow readability, and gameplay clarity support each other instead of competing for attention. |
+
+### 2026-05-25 - Shadow Edge Platform Traversal Stabilisation
+
+| Question | Notes |
+| --- | --- |
+| What was completed? | Reworked the tutorial traversal approach toward projected shadow edge platforms. Generated collider strips from projected shadow outline edges, separated walkable edges from steep sliding edges, tuned player ground detection, reduced wall sticking, improved steep-edge sliding behaviour, and refined shadow-edge carry behaviour while the light direction changes. |
+| What will be worked on next? | Continue polishing the first tutorial level route, including puzzle difficulty, light-angle limits, goal flow, failure or restart behaviour, and clearer player guidance for understanding which shadow edges are useful. |
+| Blockers, risks, or problems | The edge-based shadow traversal system is now more playable, but it still depends on careful parameter tuning. Fast shadow movement, steep edge classification, and player carry behaviour may need further testing as the level layout changes. |
