@@ -1,18 +1,20 @@
 # FF_GamePro
 
-This repository documents my Game Programming coursework process, including class exercises, Unity practice projects, planning evidence, and the main coursework game project.
+This repository contains my Game Programming coursework, including class exercises, Unity practice projects, planning evidence, testing records, and the main coursework game project.
 
 ## Main Coursework Game: ShadowPath
 
 `ShadowPath` is a 2.5D shadow-platform puzzle game developed in Unity 2022.3 LTS.
 
-The player controls a stickman character in a side-view platform environment. Unlike a traditional platform game, the player must use shadows cast by 3D objects as playable routes. The player adjusts a hidden light direction with the arrow keys, changing the position and shape of shadows to create paths, bridge gaps, and solve spatial puzzles.
+The concept draws inspiration from Chinese shadow puppetry, where light, screens, and silhouettes are used to create movement and storytelling. In `ShadowPath`, this visual idea becomes a gameplay mechanic: shadows are not only part of the scene atmosphere, but also form playable routes through the level.
 
-The intended player experience is thoughtful and experimental: observe the scene, adjust the light, test the shadow path, and move carefully toward the level goal.
+The player controls a stickman character in a side-view platform environment. Unlike a traditional platformer, progression depends on observing shadows cast by 3D objects and adjusting a hidden light direction with the arrow keys. As the light changes, the projected shadows shift shape and position, creating paths, bridging gaps, and supporting spatial puzzle solving.
 
-The active coursework Unity project is stored in `ShadowPath/`. Detailed progress, testing notes, asset credits, and development records are documented in the `docs/` folder.
+The intended experience is thoughtful and experimental: observe the scene, adjust the light, test the shadow path, and move carefully toward the level goal.
 
-## How to Run ShadowPath
+The active Unity project is stored in `ShadowPath/`. Supporting documentation, including design notes, testing evidence, asset credits, and development reflections, is stored in `docs/`.
+
+## How To Run ShadowPath
 
 1. Clone or download this repository.
 2. Open Unity Hub.
@@ -35,11 +37,11 @@ The active coursework Unity project is stored in `ShadowPath/`. Detailed progres
 
 | Folder / File | Purpose |
 | --- | --- |
-| `2D_Demo_Improvement/` | Improved version of the 2D shooter class demo. |
+| `2D_Demo_Improvement/` | Improved version of a 2D shooter class demo. |
 | `SolarSystem/` | Solar system Unity class demo. |
 | `Lecture_Q&A/` | In-class questions, answers, and discussion work. |
 | `Welldone!!_post/` | In-class group activity post. |
-| `ShadowPath/` | Main coursework Unity game project. |
+| `ShadowPath/` | Main coursework Unity project. |
 | `docs/` | Planning, testing notes, asset credits, agile records, and development reflections. |
 | `Prototype.png` | Early concept sketch kept as process evidence, although the current game design has changed. |
 
@@ -47,23 +49,23 @@ The active coursework Unity project is stored in `ShadowPath/`. Detailed progres
 
 This project follows an iterative development process:
 
-1. Build a small playable vertical slice.
-2. Focus on one clear core mechanic: using shadows as platforms.
-3. Keep the scope realistic.
-4. Commit progress regularly.
-5. Track work using a Kanban board.
+1. Build a focused playable vertical slice.
+2. Prioritise one clear core mechanic: using shadows as platforms.
+3. Keep the scope realistic for the coursework timeframe.
+4. Commit progress regularly through feature branches and pull requests.
+5. Track development work using a Kanban board.
 6. Test features after each meaningful change.
 7. Record design decisions, technical issues, and improvements.
 
 ## Assessment Focus
 
-This repository is maintained to show:
+This repository is maintained as evidence of:
 
 - A clear and realistic game concept.
-- Evidence of Unity game programming.
+- Unity gameplay programming and scene development.
 - Iterative development and steady progress.
-- Testing, debugging, and improvement.
-- Responsible asset use and credit records.
+- Testing, debugging, and refinement.
+- Responsible asset use and credit documentation.
 - Reflection on design and technical decisions.
 
 ## Documentation
@@ -78,12 +80,12 @@ This repository is maintained to show:
 
 ## Asset Credits
 
-External assets are recorded in `docs/Asset_Credits.md`, including source page, creator, licence, access date, and any edits made.
+External assets are recorded in `docs/Asset_Credits.md`, including source page, creator, licence, access date, intended use, and any edits made.
 
 ## Build Information
 
 The game is developed using:
 
 - Unity `2022.3 LTS`
-- 3D Built-In Render Pipeline
-- Target platform: Windows build first, with possible WebGL build later
+- 3D Built-in Render Pipeline
+- Target platform: Windows first, with WebGL as a possible later target
