@@ -163,3 +163,66 @@ Each test entry should include:
 | Expected result | When the player is grounded on a valid shadow edge, the player should follow the moving support edge without large snapping or mismatching to another shadow edge. |
 | Actual result | The shadow edge carry logic was refined so the player is carried only when grounded on a matching walkable generated edge. The follow behaviour is more stable during light adjustment, although some level-specific parameters may still require tuning when shadows move quickly. |
 | Status | Fixed |
+
+### 2026-05-25 - End Door Sliding Interaction Test
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Sliding end-door trigger and movement in `Level01_Tutorial` |
+| Expected result | When the player reaches the end door, the door should open smoothly like a sliding door. Only the intended moving door pieces should slide, while the upper rail remains fixed. |
+| Actual result | The player can trigger the end door by approaching it. The door panel, wheels, and vertical hanger pieces slide together, while the rail remains fixed, creating the intended sliding-door effect. |
+| Status | Pass |
+
+### 2026-05-25 - Dark Doorway Reveal Test
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Black doorway reveal behind the sliding door |
+| Expected result | The dark doorway should already exist behind the closed door and should be revealed naturally as the door opens, instead of appearing only after the opening movement finishes. |
+| Actual result | A black doorway visual is placed behind the door and is revealed during the sliding motion. The setup avoids covering the visible door before the player triggers the opening sequence. |
+| Status | Pass |
+
+### 2026-05-25 - Player Entry Sequence Test
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Player input lock, automatic entry movement, landing wait, and doorway occlusion |
+| Expected result | After the player triggers the door, player input should be locked. The player should wait while the door opens, then walk horizontally into the doorway. If the trigger is hit while jumping, the player should land before entering. As the player enters, the dark doorway should gradually hide the character until the character fully disappears. |
+| Actual result | Player input is locked after triggering the door. The player waits in place while the door opens, then automatically walks into the doorway after landing if necessary. The doorway occluder hides the player gradually from the right side during entry, producing the intended disappearance effect. |
+| Status | Pass |
+
+### 2026-05-25 - Door Close and Camera Return Test
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Post-entry door close and tutorial camera return |
+| Expected result | After the player disappears into the doorway, the door should close back to its original position and the camera should return from the end-door focus view to the initial overview framing. |
+| Actual result | After the player has fully entered the dark doorway, the sliding door closes and the tutorial camera returns to the wide overview framing. The camera no longer snaps back to the end-door focus after returning. |
+| Status | Pass |
+
+### 2026-05-25 - Level-End Blackout and Success Menu Test
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | End-of-level light fade, full-screen blackout, and completion menu |
+| Expected result | After the camera returns to the overview view, the scene lights should fade out, a black screen should fade in, and a level-complete menu should appear with Restart, Next Level, and Main Menu options. |
+| Actual result | The end sequence fades down the relevant scene lights, fades in a full-screen black overlay, and displays a `LEVEL COMPLETE` menu. Restart, Next Level, and Main Menu buttons are visible, with Next Level and Main Menu left as future scene hooks. |
+| Status | Pass |
+
+### 2026-05-25 - Completion Menu Restart and Hover Retest
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Level-complete menu interaction |
+| Expected result | The Restart button should reload the current scene. Buttons should provide clear visual feedback when the mouse hovers over them. |
+| Actual result | The Restart button reloads the current level in Play Mode. Menu buttons now show a clearer selected/hover state when the cursor is placed over them, making the completion menu easier to read and interact with. |
+| Status | Pass |
+
+### 2026-05-25 - Opening Pulse Input Jitter Retest
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Player stability when input unlocks after the tutorial opening light pulse |
+| Expected result | The player should remain visually stable when the tutorial opening sequence unlocks player input. |
+| Actual result | A small player jitter occurred when the opening wash-light pulse finished and input was unlocked. The player controller now refreshes grounded and animation state before input unlock, which removes the visible shake without changing the existing opening flow. |
+| Status | Fixed |

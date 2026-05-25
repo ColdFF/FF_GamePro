@@ -6,7 +6,9 @@ Created: 2026-05-20
 
 `ShadowPath` is a 2.5D shadow-platform puzzle game developed in Unity 2022.3 LTS.
 
-The player controls a stickman character in a side-view platform environment. The main mechanic is based on using shadows as playable paths. Instead of only jumping on physical platforms, the player must observe how 3D objects cast shadows onto a vertical projection surface, then adjust the light direction to reshape those shadows and create a route forward.
+The concept draws inspiration from Chinese shadow puppetry, a traditional performance form where light, screens, and silhouettes are used to create moving stories. `ShadowPath` adapts this idea into an interactive game mechanic: shadows are not only part of the visual atmosphere, but also become playable routes through the level.
+
+The player controls a stickman character in a side-view platform environment. Instead of only jumping on physical platforms, the player observes how 3D objects cast shadows onto a vertical projection surface, then adjusts the light direction to reshape those shadows and create a route forward.
 
 The game combines platform movement with spatial puzzle solving. The player is expected to think before moving, experiment with the light angle, and use the resulting shadow shapes to cross gaps or reach the level goal.
 
