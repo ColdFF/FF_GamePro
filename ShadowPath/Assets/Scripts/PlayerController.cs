@@ -63,6 +63,46 @@ public class PlayerController : MonoBehaviour
         rb = GetComponent<Rigidbody>();
     }
 
+    /// <summary>
+    /// Purpose: Refreshes stable movement and animation state before gameplay input is unlocked.
+    /// Input: Current Rigidbody state and ground probe result.
+    /// Output: Prevents a one-frame airborne animation or small velocity twitch when this component is re-enabled.
+    /// </summary>
+    public void PrepareForInputUnlock()
+    {
+        if (rb == null)
+        {
+            rb = GetComponent<Rigidbody>();
+        }
+
+        moveInput = 0f;
+        jumpBufferCounter = 0f;
+        postJumpGroundLockCounter = 0f;
+
+        CheckGround();
+
+        if (isGrounded)
+        {
+            coyoteCounter = coyoteTime;
+
+            if (rb != null)
+            {
+                Vector3 velocity = rb.velocity;
+                velocity.x = 0f;
+                velocity.z = 0f;
+
+                if (velocity.y < 0f)
+                {
+                    velocity.y = 0f;
+                }
+
+                rb.velocity = velocity;
+            }
+        }
+
+        UpdateAnimation();
+    }
+
     // Purpose: Reads frame-based player input and updates animation state.
     // Input: Keyboard input and the latest physics state.
     // Output: Stores movement intent, stores jump input briefly, and updates Animator parameters.

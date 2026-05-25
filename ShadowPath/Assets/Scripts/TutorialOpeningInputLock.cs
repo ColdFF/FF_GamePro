@@ -96,6 +96,7 @@ public class TutorialOpeningInputLock : MonoBehaviour
 
         if (playerController != null)
         {
+            playerController.PrepareForInputUnlock();
             playerController.enabled = originalPlayerControllerState;
         }
 
