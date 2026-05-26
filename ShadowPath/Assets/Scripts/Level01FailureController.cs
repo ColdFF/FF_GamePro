@@ -19,6 +19,9 @@ public class Level01FailureController : MonoBehaviour
     public LightAngleController lightAngleController;
     public CameraLocalWashLightController localWashLightController;
 
+    [Header("Camera References")]
+    public TutorialCameraController tutorialCameraController;
+
     [Header("Respawn")]
     public Transform respawnPoint;
     public float fallYThreshold = -3.5f;
@@ -38,6 +41,13 @@ public class Level01FailureController : MonoBehaviour
     public GameObject failureMenuRoot;
     public bool pauseWhenMenuOpens = true;
     public string mainMenuSceneName = "MainMenu";
+
+    [Header("Failure Audio")]
+    public AudioSource failureAudioSource;
+    public AudioClip fallWhooshSound;
+    [Range(0f, 1f)] public float fallWhooshVolume = 0.7f;
+    public AudioClip landingSound;
+    [Range(0f, 1f)] public float landingSoundVolume = 0.6f;
 
     private Vector3 cachedRespawnPosition;
     private Quaternion cachedRespawnRotation;
@@ -112,9 +122,11 @@ public class Level01FailureController : MonoBehaviour
     {
         isFailureSequenceRunning = true;
 
+        PlayFallWhooshSound();
         LockGameplayInput();
         HidePlayerVisual();
         ResetPlayerToRespawn();
+        ResumeFailureCameraFollow();
 
         yield return new WaitForSeconds(cameraReturnDelay);
         yield return PlayDeathDropVisual();
@@ -157,12 +169,34 @@ public class Level01FailureController : MonoBehaviour
         {
             playerRigidbody.velocity = Vector3.zero;
             playerRigidbody.angularVelocity = Vector3.zero;
+            playerRigidbody.useGravity = false;
+            playerRigidbody.isKinematic = true;
+            playerRigidbody.position = cachedRespawnPosition;
+            playerRigidbody.rotation = cachedRespawnRotation;
+            playerRigidbody.Sleep();
         }
 
         if (player != null)
         {
-            player.position = cachedRespawnPosition;
-            player.rotation = cachedRespawnRotation;
+            player.SetPositionAndRotation(cachedRespawnPosition, cachedRespawnRotation);
+        }
+    }
+
+    /// <summary>
+    /// Purpose: Ensures the camera returns to following the hidden respawned player during failure recovery.
+    /// Input: Assigned tutorial camera controller or scene lookup fallback.
+    /// Output: Camera moves back toward the start platform before the death visual plays.
+    /// </summary>
+    void ResumeFailureCameraFollow()
+    {
+        if (tutorialCameraController == null)
+        {
+            tutorialCameraController = FindObjectOfType<TutorialCameraController>();
+        }
+
+        if (tutorialCameraController != null)
+        {
+            tutorialCameraController.LockToFollowFocusAt(cachedRespawnPosition);
         }
     }
 
@@ -220,6 +254,90 @@ public class Level01FailureController : MonoBehaviour
         }
 
         deathTransform.position = endPosition;
+        StopFallWhooshSound();
+        PlayFailureSound(landingSound, landingSoundVolume);
+    }
+
+    /// <summary>
+    /// Purpose: Starts the fall whoosh as an interruptible sound during the failure fall.
+    /// Input: Fall whoosh clip and volume configured in the Inspector.
+    /// Output: Fall whoosh plays until the death visual lands or the clip ends.
+    /// </summary>
+    void PlayFallWhooshSound()
+    {
+        if (fallWhooshSound == null)
+        {
+            return;
+        }
+
+        AudioSource audioSource = GetFailureAudioSource();
+
+        if (audioSource == null)
+        {
+            return;
+        }
+
+        audioSource.Stop();
+        audioSource.clip = fallWhooshSound;
+        audioSource.loop = false;
+        audioSource.volume = fallWhooshVolume;
+        audioSource.Play();
+    }
+
+    /// <summary>
+    /// Purpose: Stops the fall whoosh once the death visual has landed.
+    /// Input: Current AudioSource playback state.
+    /// Output: Fall whoosh no longer overlaps the landing sound.
+    /// </summary>
+    void StopFallWhooshSound()
+    {
+        if (failureAudioSource == null)
+        {
+            return;
+        }
+
+        if (failureAudioSource.clip == fallWhooshSound && failureAudioSource.isPlaying)
+        {
+            failureAudioSource.Stop();
+            failureAudioSource.clip = null;
+        }
+    }
+
+    /// <summary>
+    /// Purpose: Plays one-shot audio cues during the failure sequence.
+    /// Input: Audio clip and volume configured in the Inspector.
+    /// Output: Failure sound plays through the assigned AudioSource.
+    /// </summary>
+    void PlayFailureSound(AudioClip clip, float volume)
+    {
+        if (clip == null)
+        {
+            return;
+        }
+
+        AudioSource audioSource = GetFailureAudioSource();
+
+        if (audioSource == null)
+        {
+            return;
+        }
+
+        audioSource.PlayOneShot(clip, volume);
+    }
+
+    /// <summary>
+    /// Purpose: Finds the AudioSource used for failure sequence sounds.
+    /// Input: Optional Inspector assignment or an AudioSource on this GameObject.
+    /// Output: AudioSource reference for fall and landing sounds.
+    /// </summary>
+    AudioSource GetFailureAudioSource()
+    {
+        if (failureAudioSource == null)
+        {
+            failureAudioSource = GetComponent<AudioSource>();
+        }
+
+        return failureAudioSource;
     }
 
     /// <summary>

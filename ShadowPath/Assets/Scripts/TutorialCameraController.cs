@@ -21,6 +21,10 @@ public class TutorialCameraController : MonoBehaviour
     public float zoomDuration = 1.4f;
     public float followSmoothTime = 0.25f;
 
+    [Header("Scripted Focus")]
+    public float scriptedFocusSmoothTime = 0.45f;
+    public float scriptedFocusZoomDuration = 0.35f;
+
     [Header("Camera Bounds")]
     public bool useBounds = true;
     public float minX = -2.5f;
@@ -42,6 +46,9 @@ public class TutorialCameraController : MonoBehaviour
     private bool isFollowing;
     private bool isReturningToOverview;
     private bool hasReturnedToOverview;
+    private bool isManualFocusLocked;
+    private Vector3 manualFocusPosition;
+    private float manualFocusSize;
 
     // Purpose: Initializes the camera at the wide overview position when the level begins.
     // Input: Camera component and overview settings.
@@ -66,6 +73,12 @@ public class TutorialCameraController : MonoBehaviour
     // Output: Transitions from overview to player-follow camera behaviour.
     void LateUpdate()
     {
+        if (isManualFocusLocked)
+        {
+            UpdateManualFocusCamera();
+            return;
+        }
+
         if (isReturningToOverview)
         {
             UpdateReturnCamera();
@@ -100,14 +113,7 @@ public class TutorialCameraController : MonoBehaviour
     // Output: Updates camera position and orthographic size.
     void UpdateFollowCamera()
     {
-        Vector3 targetPosition = player.position + followOffset;
-        targetPosition.z = followOffset.z;
-
-        if (useBounds)
-        {
-            targetPosition.x = Mathf.Clamp(targetPosition.x, minX, maxX);
-            targetPosition.y = Mathf.Clamp(targetPosition.y, minY, maxY);
-        }
+        Vector3 targetPosition = GetFollowTargetPosition();
 
         transform.position = Vector3.SmoothDamp(
             transform.position,
@@ -122,6 +128,35 @@ public class TutorialCameraController : MonoBehaviour
             ref zoomVelocity,
             zoomDuration
         );
+    }
+
+    /// <summary>
+    /// Purpose: Calculates the current player-follow camera target.
+    /// Input: Player position, follow offset, and optional camera bounds.
+    /// Output: Bounded camera target position for follow and failure recovery shots.
+    /// </summary>
+    Vector3 GetFollowTargetPosition()
+    {
+        return GetFollowTargetPosition(player.position);
+    }
+
+    /// <summary>
+    /// Purpose: Calculates a player-follow camera target around a specific world point.
+    /// Input: World point, follow offset, and optional camera bounds.
+    /// Output: Bounded camera target position for scripted focus shots.
+    /// </summary>
+    Vector3 GetFollowTargetPosition(Vector3 worldPoint)
+    {
+        Vector3 targetPosition = worldPoint + followOffset;
+        targetPosition.z = followOffset.z;
+
+        if (useBounds)
+        {
+            targetPosition.x = Mathf.Clamp(targetPosition.x, minX, maxX);
+            targetPosition.y = Mathf.Clamp(targetPosition.y, minY, maxY);
+        }
+
+        return targetPosition;
     }
 
     /// <summary>
@@ -144,8 +179,111 @@ public class TutorialCameraController : MonoBehaviour
         isFollowing = false;
         isReturningToOverview = true;
         hasReturnedToOverview = false;
+        isManualFocusLocked = false;
         followVelocity = Vector3.zero;
         zoomVelocity = 0f;
+    }
+
+    /// <summary>
+    /// Purpose: Restores player-follow behaviour for failure recovery sequences.
+    /// Input: External call after the hidden player has been moved back to the respawn point.
+    /// Output: Camera follows the player again even if a previous level flow had stopped following.
+    /// </summary>
+    public void ResumePlayerFollow()
+    {
+        if (cameraComponent == null)
+        {
+            cameraComponent = GetComponent<Camera>();
+        }
+
+        if (cameraComponent == null)
+        {
+            return;
+        }
+
+        isReturningToOverview = false;
+        hasReturnedToOverview = false;
+        isManualFocusLocked = false;
+        isFollowing = true;
+        timer = overviewHoldTime;
+        followVelocity = Vector3.zero;
+        zoomVelocity = 0f;
+    }
+
+    /// <summary>
+    /// Purpose: Immediately restores the player-follow composition for failure feedback.
+    /// Input: Current player transform and follow camera settings.
+    /// Output: Camera is placed on the same focused view used during normal play.
+    /// </summary>
+    public void SnapToPlayerFollow()
+    {
+        ResumePlayerFollow();
+
+        if (player == null || cameraComponent == null)
+        {
+            return;
+        }
+
+        transform.position = GetFollowTargetPosition();
+        cameraComponent.orthographicSize = followSize;
+        followVelocity = Vector3.zero;
+        zoomVelocity = 0f;
+    }
+
+    /// <summary>
+    /// Purpose: Locks the camera on the normal follow composition around a fixed world point.
+    /// Input: World point such as the level respawn position.
+    /// Output: Camera stays on that composition without following a moving hidden player.
+    /// </summary>
+    public void LockToFollowFocusAt(Vector3 worldPoint)
+    {
+        if (cameraComponent == null)
+        {
+            cameraComponent = GetComponent<Camera>();
+        }
+
+        if (cameraComponent == null)
+        {
+            return;
+        }
+
+        manualFocusPosition = GetFollowTargetPosition(worldPoint);
+        manualFocusSize = followSize;
+
+        isManualFocusLocked = true;
+        isReturningToOverview = false;
+        hasReturnedToOverview = false;
+        isFollowing = false;
+        timer = overviewHoldTime;
+        followVelocity = Vector3.zero;
+        zoomVelocity = 0f;
+    }
+
+    /// <summary>
+    /// Purpose: Smoothly moves and zooms the camera toward a fixed scripted focus point.
+    /// Input: Cached manual focus target, focus smoothing, and zoom duration.
+    /// Output: Camera eases into the focus instead of snapping there.
+    /// </summary>
+    void UpdateManualFocusCamera()
+    {
+        transform.position = Vector3.SmoothDamp(
+            transform.position,
+            manualFocusPosition,
+            ref followVelocity,
+            Mathf.Max(0.01f, scriptedFocusSmoothTime)
+        );
+
+        if (cameraComponent == null)
+        {
+            return;
+        }
+
+        cameraComponent.orthographicSize = Mathf.SmoothDamp(
+            cameraComponent.orthographicSize,
+            manualFocusSize,
+            ref zoomVelocity,
+            Mathf.Max(0.01f, scriptedFocusZoomDuration)
+        );
     }
 
     /// <summary>

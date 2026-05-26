@@ -576,6 +576,11 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
             return;
         }
 
+        if (!playerController.enabled)
+        {
+            return;
+        }
+
         if (previousEdges.Count == 0 || nextEdges.Count == 0)
         {
             return;

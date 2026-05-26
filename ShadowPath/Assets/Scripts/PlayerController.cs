@@ -36,6 +36,23 @@ public class PlayerController : MonoBehaviour
     public float coyoteTime = 0.1f;
     public float postJumpGroundLockTime = 0.12f;
 
+    [Header("Jump Audio")]
+    public AudioSource playerAudioSource;
+    public AudioClip jumpSound;
+    [Range(0f, 1f)] public float jumpSoundVolume = 0.7f;
+
+    [Header("Footstep Audio")]
+    public AudioClip footstepSound;
+    [Range(0f, 1f)] public float footstepSoundVolume = 0.45f;
+    public float walkFootstepInterval = 0.38f;
+    public float runFootstepInterval = 0.26f;
+
+    [Header("Shadow Footstep Audio")]
+    public AudioClip shadowFootstepSound;
+    [Range(0f, 1f)] public float shadowFootstepSoundVolume = 0.28f;
+    public AudioClip shadowRunFootstepSound;
+    [Range(0f, 1f)] public float shadowRunFootstepSoundVolume = 0.28f;
+
     [Header("Visual")]
     public Transform visual;
 
@@ -48,6 +65,7 @@ public class PlayerController : MonoBehaviour
     private float jumpBufferCounter;
     private float coyoteCounter;
     private float postJumpGroundLockCounter;
+    private float footstepCounter;
     private Vector3 groundNormal = Vector3.up;
     private Collider currentGroundCollider;
 
@@ -111,6 +129,7 @@ public class PlayerController : MonoBehaviour
         ReadInput();
         ReadJumpInput();
         UpdateAnimation();
+        UpdateFootstepAudio();
     }
 
     // Purpose: Runs physics-based movement and jump logic at a stable timestep.
@@ -272,11 +291,148 @@ public class PlayerController : MonoBehaviour
         Vector3 velocity = rb.velocity;
         velocity.y = jumpForce;
         rb.velocity = velocity;
+        PlayJumpSound();
 
         jumpBufferCounter = 0f;
         coyoteCounter = 0f;
         postJumpGroundLockCounter = postJumpGroundLockTime;
         ClearGroundState();
+    }
+
+    // Purpose: Plays the jump sound only when a buffered jump is actually applied.
+    // Input: Jump Audio inspector fields.
+    // Output: Emits one jump sound without playing during invalid airborne jump input.
+    void PlayJumpSound()
+    {
+        if (jumpSound == null)
+        {
+            return;
+        }
+
+        if (playerAudioSource == null)
+        {
+            playerAudioSource = GetComponent<AudioSource>();
+        }
+
+        if (playerAudioSource == null)
+        {
+            return;
+        }
+
+        playerAudioSource.PlayOneShot(jumpSound, jumpSoundVolume);
+    }
+
+    // Purpose: Plays repeated footstep sounds only while the player is grounded and moving.
+    // Input: Grounded state, horizontal input, Shift input, and footstep audio settings.
+    // Output: Emits footstep sounds at a walking or running cadence without playing in midair.
+    void UpdateFootstepAudio()
+    {
+        if (!isGrounded || Mathf.Approximately(moveInput, 0f))
+        {
+            footstepCounter = 0f;
+            return;
+        }
+
+        if (playerAudioSource == null)
+        {
+            playerAudioSource = GetComponent<AudioSource>();
+        }
+
+        if (playerAudioSource == null)
+        {
+            return;
+        }
+
+        bool isHoldingShift = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+        bool isOnShadowSurface = IsStandingOnShadowSurface();
+        AudioClip clip = GetFootstepClip(isOnShadowSurface, isHoldingShift);
+
+        if (clip == null)
+        {
+            footstepCounter = 0f;
+            return;
+        }
+
+        footstepCounter -= Time.deltaTime;
+
+        if (footstepCounter > 0f)
+        {
+            return;
+        }
+
+        playerAudioSource.PlayOneShot(clip, GetFootstepVolume(isOnShadowSurface, isHoldingShift));
+
+        float interval = isHoldingShift ? runFootstepInterval : walkFootstepInterval;
+        footstepCounter = Mathf.Max(0.05f, interval);
+    }
+
+    /// <summary>
+    /// Purpose: Selects the correct footstep clip for normal platforms or shadow platforms.
+    /// Input: Whether the player is on shadow geometry and whether they are running.
+    /// Output: Audio clip used for the next footstep.
+    /// </summary>
+    AudioClip GetFootstepClip(bool isOnShadowSurface, bool isRunning)
+    {
+        if (!isOnShadowSurface)
+        {
+            return footstepSound;
+        }
+
+        if (isRunning && shadowRunFootstepSound != null)
+        {
+            return shadowRunFootstepSound;
+        }
+
+        return shadowFootstepSound != null ? shadowFootstepSound : footstepSound;
+    }
+
+    /// <summary>
+    /// Purpose: Selects the matching volume for the current footstep surface.
+    /// Input: Whether the player is on shadow geometry and whether they are running.
+    /// Output: Volume used for the next footstep.
+    /// </summary>
+    float GetFootstepVolume(bool isOnShadowSurface, bool isRunning)
+    {
+        if (!isOnShadowSurface)
+        {
+            return footstepSoundVolume;
+        }
+
+        if (isRunning && shadowRunFootstepSound != null)
+        {
+            return shadowRunFootstepSoundVolume;
+        }
+
+        return shadowFootstepSoundVolume;
+    }
+
+    /// <summary>
+    /// Purpose: Detects whether the current ground collider belongs to generated shadow traversal geometry.
+    /// Input: Current ground collider from the ground probe.
+    /// Output: True when shadow-specific footstep audio should be used.
+    /// </summary>
+    bool IsStandingOnShadowSurface()
+    {
+        if (currentGroundCollider == null)
+        {
+            return false;
+        }
+
+        Transform groundTransform = currentGroundCollider.transform;
+
+        if (groundTransform.GetComponentInParent<ProjectedShadowAllEdgePlatform>() != null ||
+            groundTransform.GetComponentInParent<ProjectedShadowCollider>() != null ||
+            groundTransform.GetComponentInParent<ProjectedShadowEdgeWalkway>() != null ||
+            groundTransform.GetComponentInParent<ShadowTopPlatform>() != null)
+        {
+            return true;
+        }
+
+        string groundName = groundTransform.name;
+
+        return groundName.Contains("GeneratedEdge") ||
+               groundName.Contains("WalkableEdges") ||
+               groundName.Contains("ProjectedShadow");
     }
 
     // Purpose: Applies walking and running movement while respecting slopes.

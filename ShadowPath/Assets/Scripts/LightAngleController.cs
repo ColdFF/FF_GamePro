@@ -15,8 +15,8 @@ public class LightAngleController : MonoBehaviour
     public float minXAngle = -60f;
     public float maxXAngle = 60f;
 
-    private float currentX = -25f;
-    private float currentY = 20f;
+    private float currentX = -15f;
+    private float currentY = 10f;
 
     // Purpose: Sets the initial Directional Light rotation when the scene starts.
     // Input: The starting X and Y light angles stored in this script.
