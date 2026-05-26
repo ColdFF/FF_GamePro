@@ -29,6 +29,11 @@ public class LevelEndBlackoutController : MonoBehaviour
     public float delayAfterOverviewReturn = 0.4f;
     public bool playOnlyOnce = true;
 
+    [Header("Blackout Audio")]
+    public AudioSource blackoutAudioSource;
+    public AudioClip lightsOffSound;
+    [Range(0f, 1f)] public float lightsOffSoundVolume = 0.7f;
+
     [Header("Success Menu")]
     public bool showSuccessMenuAfterBlackout = true;
     public string successTitle = "LEVEL COMPLETE";
@@ -95,6 +100,8 @@ public class LevelEndBlackoutController : MonoBehaviour
             yield return new WaitForSeconds(delayAfterOverviewReturn);
         }
 
+        PlayBlackoutSound();
+
         float totalDuration = Mathf.Max(
             Mathf.Max(0.01f, lightFadeDuration),
             Mathf.Max(0f, screenFadeDelay) + Mathf.Max(0.01f, screenFadeDuration)
@@ -116,6 +123,31 @@ public class LevelEndBlackoutController : MonoBehaviour
         SetBlackoutAlpha(1f);
         ShowSuccessMenu();
         blackoutRoutine = null;
+    }
+
+    /// <summary>
+    /// Purpose: Plays a short sound when the level-end blackout begins.
+    /// Input: Audio clip and AudioSource assigned in the Inspector.
+    /// Output: Lights-off sound plays once before the lights fade down.
+    /// </summary>
+    void PlayBlackoutSound()
+    {
+        if (lightsOffSound == null)
+        {
+            return;
+        }
+
+        if (blackoutAudioSource == null)
+        {
+            blackoutAudioSource = GetComponent<AudioSource>();
+        }
+
+        if (blackoutAudioSource == null)
+        {
+            return;
+        }
+
+        blackoutAudioSource.PlayOneShot(lightsOffSound, lightsOffSoundVolume);
     }
 
     /// <summary>

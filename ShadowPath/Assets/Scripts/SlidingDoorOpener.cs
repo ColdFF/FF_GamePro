@@ -18,6 +18,12 @@ public class SlidingDoorOpener : MonoBehaviour
     public AnimationCurve openCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
     public bool openOnlyOnce = true;
 
+    [Header("Door Audio")]
+    public AudioSource doorAudioSource;
+    public AudioClip openSound;
+    public AudioClip closeSound;
+    [Range(0f, 1f)] public float doorSoundVolume = 0.7f;
+
     [Header("Reveal Visual")]
     public GameObject revealObject;
     public Renderer revealRenderer;
@@ -197,6 +203,7 @@ public class SlidingDoorOpener : MonoBehaviour
     IEnumerator OpenDoorRoutine()
     {
         hasOpened = true;
+        PlayDoorSound(openSound);
 
         float elapsedTime = 0f;
         float safeDuration = Mathf.Max(0.01f, openDuration);
@@ -351,6 +358,8 @@ public class SlidingDoorOpener : MonoBehaviour
     /// </summary>
     IEnumerator CloseDoorRoutine()
     {
+        PlayDoorSound(closeSound);
+
         float elapsedTime = 0f;
         float safeDuration = Mathf.Max(0.01f, closeDuration);
 
@@ -401,6 +410,31 @@ public class SlidingDoorOpener : MonoBehaviour
         {
             SetRevealProgress(progress);
         }
+    }
+
+    /// <summary>
+    /// Purpose: Plays a configured one-shot door sound when opening or closing starts.
+    /// Input: Audio clip assigned in the Inspector.
+    /// Output: Door sound is played through the configured AudioSource.
+    /// </summary>
+    void PlayDoorSound(AudioClip clip)
+    {
+        if (clip == null)
+        {
+            return;
+        }
+
+        if (doorAudioSource == null)
+        {
+            doorAudioSource = GetComponent<AudioSource>();
+        }
+
+        if (doorAudioSource == null)
+        {
+            return;
+        }
+
+        doorAudioSource.PlayOneShot(clip, doorSoundVolume);
     }
 
     /// <summary>

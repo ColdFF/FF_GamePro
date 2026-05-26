@@ -39,6 +39,7 @@ public class ProjectedShadowCollider : MonoBehaviour
 
     private Transform currentPassenger;
     private Rigidbody currentPassengerRigidbody;
+    private PlayerController currentPassengerController;
 
     // Purpose: Prepares the generated mesh and required components.
     // Input: MeshFilter and MeshCollider attached to this GameObject.
@@ -495,6 +496,16 @@ public class ProjectedShadowCollider : MonoBehaviour
             return;
         }
 
+        if (currentPassengerController == null && currentPassenger != null)
+        {
+            currentPassengerController = currentPassenger.GetComponent<PlayerController>();
+        }
+
+        if (currentPassengerController != null && !currentPassengerController.enabled)
+        {
+            return;
+        }
+
         if (currentPassengerRigidbody != null)
         {
             currentPassengerRigidbody.position += supportDelta;
@@ -634,6 +645,12 @@ public class ProjectedShadowCollider : MonoBehaviour
 
         currentPassenger = playerTransform;
         currentPassengerRigidbody = collision.rigidbody;
+        currentPassengerController = playerTransform.GetComponent<PlayerController>();
+
+        if (currentPassengerController == null && currentPassengerRigidbody != null)
+        {
+            currentPassengerController = currentPassengerRigidbody.GetComponent<PlayerController>();
+        }
     }
 
     // Purpose: Checks whether collision contact is close to the silhouette top edge.
@@ -690,6 +707,7 @@ public class ProjectedShadowCollider : MonoBehaviour
     {
         currentPassenger = null;
         currentPassengerRigidbody = null;
+        currentPassengerController = null;
     }
 
     // Purpose: Slightly expands the outline if collider tolerance is needed.
