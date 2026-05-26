@@ -226,3 +226,48 @@ Each test entry should include:
 | Expected result | The player should remain visually stable when the tutorial opening sequence unlocks player input. |
 | Actual result | A small player jitter occurred when the opening wash-light pulse finished and input was unlocked. The player controller now refreshes grounded and animation state before input unlock, which removes the visible shake without changing the existing opening flow. |
 | Status | Fixed |
+
+### 2026-05-26 - Gameplay Audio Integration Test
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Gameplay sound effects for door movement, light changes, player jump, footsteps, falling, and death landing |
+| Expected result | Each gameplay event should play the correct sound at the correct time without disrupting the existing movement, door, light, completion, or failure systems. |
+| Actual result | Audio was added and tested in `Level01_Tutorial`. The sliding door plays open and close sounds, the opening light pulse plays a light-on cue, the final blackout plays a light-off cue, player jumps play a jump cue, normal platform movement plays a regular footstep cue, falling plays a whoosh cue, and the death visual landing plays a separate soft landing cue. |
+| Status | Pass |
+
+### 2026-05-26 - Shadow Footstep Audio Retest
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Different footstep audio on normal platforms and generated shadow platforms |
+| Expected result | The player should use the normal footstep sound on the start and end platforms, but use a quieter shadow-footstep sound while walking or running on shadow-generated traversal edges. |
+| Actual result | The player controller now selects the normal `Walk.wav` cue on regular platform ground and the quieter `ShadowWalk.wav` cue on generated shadow platform ground. The shadow sound feels lighter and better matches the shadow-path fantasy while preserving the clearer normal footstep on physical platforms. |
+| Status | Pass |
+
+### 2026-05-26 - Opening Light Pulse Audio and Dim Start Test
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Opening tutorial light presentation and light-on sound |
+| Expected result | The level should begin with a dimmer focused view, then play the light-on cue as the wash-light pulse appears and returns the scene to normal lighting. This should not reintroduce the earlier player jitter. |
+| Actual result | The opening flow now starts with the wash light hidden or dimmed, plays the light-on cue when the pulse begins, and restores the normal tutorial lighting after the pulse. The player remains visually stable when input unlocks. |
+| Status | Pass |
+
+### 2026-05-26 - Failure Audio Stop and Landing Retest
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Falling sound handoff into death landing sound |
+| Expected result | The falling whoosh should play while the player is falling after failure, then stop when the death visual lands so the landing cue is clear and not covered by the continued falling sound. |
+| Actual result | The falling audio now stops when the death landing event plays. The softer generated death landing cue is heard clearly when the death visual lands on the start platform. |
+| Status | Fixed |
+
+### 2026-05-26 - Failure Camera Return Retest
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Camera behaviour after the player falls from the shadow path |
+| Expected result | After failure, the camera should return smoothly to the original start-area focus before the death visual drops onto the platform, so the player can see the failure feedback and restart menu. |
+| Actual result | A regression caused the camera to briefly jump toward the start focus and then return to the wrong area, hiding the death visual. The failure flow was corrected so the camera locks into the start-area failure focus and moves there more naturally before the death animation appears. |
+| Status | Fixed |
