@@ -25,6 +25,32 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
     [Range(0f, 1f)]
     public float minWalkableNormalY = 0.65f;
 
+    [Header("Curved Caster Sampling")]
+    public bool addCurvedCasterSamples = true;
+
+    [Min(8)]
+    public int curvedCasterSampleCount = 48;
+
+    [Range(0f, 1f)]
+    public float curvedCasterRadiusTolerance = 0.18f;
+
+    [Min(0f)]
+    public float curvedEdgeExtraPadding = 0.02f;
+
+    public bool addCurvedTopSupport = true;
+
+    [Min(0.01f)]
+    public float curvedTopSupportThickness = 0.04f;
+
+    [Min(0f)]
+    public float curvedTopSupportPadding = 0.035f;
+
+    [Min(0f)]
+    public float curvedTopEnvelopeTolerance = 0.06f;
+
+    [Range(0f, 1f)]
+    public float curvedTopSupportMinSourceNormalY = 0.25f;
+
     [Header("Edge Selection Debug")]
     public bool buildAllEdgesForDebug = true;
     public bool flipWalkableNormal = false;
@@ -60,6 +86,8 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
     [SerializeField] private int lastGeneratedEdgeCount;
     [SerializeField] private int lastWalkableEdgeCount;
     [SerializeField] private int lastSteepEdgeCount;
+    [SerializeField] private int lastCurvedSamplePointCount;
+    [SerializeField] private int lastCurvedTopSupportEdgeCount;
     [SerializeField] private string lastBuildMessage;
 
     private readonly List<GameObject> generatedEdges = new List<GameObject>();
@@ -72,6 +100,7 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
     private Rigidbody playerRigidbody;
     private Collider playerCollider;
     private PlayerController playerController;
+    private bool currentBuildUsesCurvedSamples;
 
     private struct EdgeSnapshot
     {
@@ -100,6 +129,26 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
             this.worldEnd = worldEnd;
             this.isWalkable = isWalkable;
         }
+    }
+
+    /// <summary>
+    /// Purpose: Repairs serialized defaults for curved-caster fields added after existing scene instances were created.
+    /// Input: Current serialized values on this component.
+    /// Output: Curved support starts enabled with safe values unless the scene has explicit non-default tuning.
+    /// </summary>
+    private void Awake()
+    {
+        NormalizeCurvedCasterDefaults();
+    }
+
+    /// <summary>
+    /// Purpose: Repairs newly added curved-caster defaults while editing older scene instances.
+    /// Input: Inspector value changes and script recompiles.
+    /// Output: Existing Level02 instances pick up safe curved-shadow defaults without manual scene rewiring.
+    /// </summary>
+    private void OnValidate()
+    {
+        NormalizeCurvedCasterDefaults();
     }
 
     /// <summary>
@@ -137,7 +186,10 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
         lastGeneratedEdgeCount = 0;
         lastWalkableEdgeCount = 0;
         lastSteepEdgeCount = 0;
+        lastCurvedSamplePointCount = 0;
+        lastCurvedTopSupportEdgeCount = 0;
         lastBuildMessage = "";
+        currentBuildUsesCurvedSamples = false;
 
         colliderGeneratedIndices.Clear();
         colliderWalkableStates.Clear();
@@ -169,7 +221,7 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
         }
 
         nextEdges.Clear();
-        BuildEdgesFromHull(hull);
+        lastGeneratedEdgeCount = BuildEdgesFromHull(hull, 0);
 
         if (carryPlayerWithShadow)
         {
@@ -222,8 +274,8 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Projects each caster mesh vertex onto the shadow screen plane.
-    /// Input: Caster mesh vertices, caster transform, directional light direction, and shadow screen plane.
+    /// Purpose: Projects each caster mesh vertex and optional curved-surface samples onto the shadow screen plane.
+    /// Input: Caster mesh vertices, optional analytic round-caster samples, caster transform, directional light direction, and shadow screen plane.
     /// Output: Projected points in shadow screen local XY space.
     /// </summary>
     private List<Vector2> GetProjectedPointsOnScreen()
@@ -243,17 +295,163 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
         foreach (Vector3 localVertex in meshFilter.sharedMesh.vertices)
         {
             Vector3 worldVertex = shadowCasterRenderer.transform.TransformPoint(localVertex);
-            Ray projectionRay = new Ray(worldVertex, lightDirection);
-
-            if (screenPlane.Raycast(projectionRay, out float distance))
-            {
-                Vector3 worldHit = projectionRay.GetPoint(distance);
-                Vector3 screenLocalHit = shadowScreen.InverseTransformPoint(worldHit);
-                points.Add(new Vector2(screenLocalHit.x, screenLocalHit.y));
-            }
+            AddProjectedPoint(worldVertex, screenPlane, lightDirection, points);
         }
 
+        AddCurvedCasterProjectionSamples(
+            meshFilter.sharedMesh,
+            screenPlane,
+            lightDirection,
+            points
+        );
+
         return points;
+    }
+
+    /// <summary>
+    /// Purpose: Adds one projected world point to the current screen-local point list.
+    /// Input: A world-space caster point, the shadow screen plane, and light direction.
+    /// Output: Projected 2D screen-local point is appended when the projection is valid.
+    /// </summary>
+    private void AddProjectedPoint(
+        Vector3 worldPoint,
+        Plane screenPlane,
+        Vector3 lightDirection,
+        List<Vector2> points
+    )
+    {
+        Ray projectionRay = new Ray(worldPoint, lightDirection);
+
+        if (!screenPlane.Raycast(projectionRay, out float distance))
+        {
+            return;
+        }
+
+        Vector3 worldHit = projectionRay.GetPoint(distance);
+        Vector3 screenLocalHit = shadowScreen.InverseTransformPoint(worldHit);
+        points.Add(new Vector2(screenLocalHit.x, screenLocalHit.y));
+    }
+
+    /// <summary>
+    /// Purpose: Adds extra projection samples for round casters whose true silhouette can pass between low-poly mesh vertices.
+    /// Input: Caster mesh bounds, shadow screen plane, and light direction.
+    /// Output: Additional circular-ring samples make cylinder shadows generate continuous walkable edge strips.
+    /// </summary>
+    private void AddCurvedCasterProjectionSamples(
+        Mesh casterMesh,
+        Plane screenPlane,
+        Vector3 lightDirection,
+        List<Vector2> points
+    )
+    {
+        if (!ShouldAddCurvedCasterSamples(casterMesh))
+        {
+            return;
+        }
+
+        Bounds localBounds = casterMesh.bounds;
+        Vector3 center = localBounds.center;
+        Vector3 extents = localBounds.extents;
+
+        float radiusX = Mathf.Max(0.0001f, extents.x);
+        float radiusZ = Mathf.Max(0.0001f, extents.z);
+        float lowerY = center.y - extents.y;
+        float upperY = center.y + extents.y;
+        int sampleCount = Mathf.Clamp(curvedCasterSampleCount, 8, 128);
+
+        currentBuildUsesCurvedSamples = true;
+
+        AddCurvedCasterRingSamples(
+            center,
+            lowerY,
+            radiusX,
+            radiusZ,
+            sampleCount,
+            screenPlane,
+            lightDirection,
+            points
+        );
+
+        AddCurvedCasterRingSamples(
+            center,
+            upperY,
+            radiusX,
+            radiusZ,
+            sampleCount,
+            screenPlane,
+            lightDirection,
+            points
+        );
+    }
+
+    /// <summary>
+    /// Purpose: Detects whether the caster should receive extra circular silhouette samples.
+    /// Input: Mesh name, vertex count, and local bounds.
+    /// Output: True for cylinder-like meshes, false for ordinary box/platform meshes.
+    /// </summary>
+    private bool ShouldAddCurvedCasterSamples(Mesh casterMesh)
+    {
+        NormalizeCurvedCasterDefaults();
+
+        if (!addCurvedCasterSamples || casterMesh == null)
+        {
+            return false;
+        }
+
+        string meshName = casterMesh.name.ToLowerInvariant();
+
+        if (meshName.Contains("cylinder") || meshName.Contains("capsule"))
+        {
+            return true;
+        }
+
+        if (casterMesh.vertexCount < 32)
+        {
+            return false;
+        }
+
+        Vector3 extents = casterMesh.bounds.extents;
+        float largerRadius = Mathf.Max(extents.x, extents.z);
+
+        if (largerRadius <= 0.0001f)
+        {
+            return false;
+        }
+
+        float radiusDifference = Mathf.Abs(extents.x - extents.z) / largerRadius;
+
+        return radiusDifference <= curvedCasterRadiusTolerance;
+    }
+
+    /// <summary>
+    /// Purpose: Samples one local-space circular ring on a cylinder-like caster.
+    /// Input: Ring center, local Y height, radii, sample count, shadow screen plane, and light direction.
+    /// Output: Projected ring points are appended to the projection point list.
+    /// </summary>
+    private void AddCurvedCasterRingSamples(
+        Vector3 center,
+        float localY,
+        float radiusX,
+        float radiusZ,
+        int sampleCount,
+        Plane screenPlane,
+        Vector3 lightDirection,
+        List<Vector2> points
+    )
+    {
+        for (int i = 0; i < sampleCount; i++)
+        {
+            float angle = (Mathf.PI * 2f * i) / sampleCount;
+            Vector3 localPoint = new Vector3(
+                center.x + Mathf.Cos(angle) * radiusX,
+                localY,
+                center.z + Mathf.Sin(angle) * radiusZ
+            );
+
+            Vector3 worldPoint = shadowCasterRenderer.transform.TransformPoint(localPoint);
+            AddProjectedPoint(worldPoint, screenPlane, lightDirection, points);
+            lastCurvedSamplePointCount++;
+        }
     }
 
     /// <summary>
@@ -269,6 +467,9 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
             int xCompare = a.x.CompareTo(b.x);
             return xCompare != 0 ? xCompare : a.y.CompareTo(b.y);
         });
+
+        List<Vector2> uniquePoints = RemoveDuplicatePoints(sorted);
+        sorted = uniquePoints;
 
         List<Vector2> hull = new List<Vector2>();
 
@@ -307,6 +508,34 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
     }
 
     /// <summary>
+    /// Purpose: Removes repeated projected points before hull generation.
+    /// Input: Sorted projected points.
+    /// Output: Unique points that keep hull construction stable for dense curved sampling.
+    /// </summary>
+    private List<Vector2> RemoveDuplicatePoints(List<Vector2> sortedPoints)
+    {
+        List<Vector2> uniquePoints = new List<Vector2>();
+
+        for (int i = 0; i < sortedPoints.Count; i++)
+        {
+            if (uniquePoints.Count == 0)
+            {
+                uniquePoints.Add(sortedPoints[i]);
+                continue;
+            }
+
+            Vector2 previousPoint = uniquePoints[uniquePoints.Count - 1];
+
+            if ((sortedPoints[i] - previousPoint).sqrMagnitude > 0.000001f)
+            {
+                uniquePoints.Add(sortedPoints[i]);
+            }
+        }
+
+        return uniquePoints;
+    }
+
+    /// <summary>
     /// Purpose: Calculates signed 2D turn direction for hull construction.
     /// Input: Origin point, first point, and second point.
     /// Output: Positive, negative, or zero cross-product value.
@@ -319,13 +548,11 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
 
     /// <summary>
     /// Purpose: Converts hull edges into collider strips and classifies each edge as walkable or steep.
-    /// Input: Ordered hull points in shadow screen local XY space.
-    /// Output: Generated edge colliders and edge snapshots for the current physics step.
+    /// Input: Ordered hull points in shadow screen local XY space and the first generated edge index.
+    /// Output: Next free generated edge index after all regular hull edge strips.
     /// </summary>
-    private void BuildEdgesFromHull(List<Vector2> hull)
+    private int BuildEdgesFromHull(List<Vector2> hull, int generatedIndex)
     {
-        int generatedIndex = 0;
-
         for (int i = 0; i < hull.Count; i++)
         {
             Vector2 localStart = hull[i];
@@ -348,21 +575,46 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
             }
 
             bool isWalkable = Vector3.Dot(worldNormal, Vector3.up) >= minWalkableNormalY;
+            bool useCurvedSupportOverrides =
+                currentBuildUsesCurvedSamples &&
+                addCurvedTopSupport &&
+                isWalkable &&
+                IsUpperEnvelopeEdge(hull, localStart, localEnd);
 
             if (!buildAllEdgesForDebug && !isWalkable)
             {
                 continue;
             }
 
-            CreateOrUpdateEdge(
-                generatedIndex,
-                i,
-                worldStart,
-                worldEnd,
-                worldNormal,
-                worldLength,
-                isWalkable
-            );
+            if (useCurvedSupportOverrides)
+            {
+                CreateOrUpdateEdge(
+                    generatedIndex,
+                    i,
+                    worldStart,
+                    worldEnd,
+                    worldNormal,
+                    worldLength,
+                    isWalkable,
+                    "GeneratedCurvedWalkableEdge",
+                    curvedTopSupportThickness,
+                    curvedTopSupportPadding
+                );
+
+                lastCurvedTopSupportEdgeCount++;
+            }
+            else
+            {
+                CreateOrUpdateEdge(
+                    generatedIndex,
+                    i,
+                    worldStart,
+                    worldEnd,
+                    worldNormal,
+                    worldLength,
+                    isWalkable
+                );
+            }
 
             generatedIndex++;
 
@@ -376,7 +628,80 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
             }
         }
 
-        lastGeneratedEdgeCount = generatedIndex;
+        return generatedIndex;
+    }
+
+    /// <summary>
+    /// Purpose: Checks whether a hull edge lies on the upper visible silhouette rather than on the side or bottom.
+    /// Input: Full hull and one candidate local edge.
+    /// Output: True when the edge should receive curved walkable support.
+    /// </summary>
+    private bool IsUpperEnvelopeEdge(List<Vector2> hull, Vector2 localStart, Vector2 localEnd)
+    {
+        if (Mathf.Abs(localEnd.x - localStart.x) < minEdgeLength)
+        {
+            return false;
+        }
+
+        Vector2 midpoint = (localStart + localEnd) * 0.5f;
+
+        if (!TryGetTopYAtX(hull, midpoint.x, out float topYAtMidpoint))
+        {
+            return false;
+        }
+
+        float tolerance = Mathf.Max(0.001f, curvedTopEnvelopeTolerance);
+
+        return Mathf.Abs(midpoint.y - topYAtMidpoint) <= tolerance;
+    }
+
+    /// <summary>
+    /// Purpose: Finds the highest point where a vertical screen-space line intersects the hull.
+    /// Input: Hull outline and a screen-local X coordinate.
+    /// Output: Top Y coordinate at that X if the hull crosses the line.
+    /// </summary>
+    private bool TryGetTopYAtX(List<Vector2> hull, float x, out float topY)
+    {
+        topY = float.NegativeInfinity;
+        bool foundIntersection = false;
+
+        for (int i = 0; i < hull.Count; i++)
+        {
+            Vector2 a = hull[i];
+            Vector2 b = hull[(i + 1) % hull.Count];
+
+            float minX = Mathf.Min(a.x, b.x);
+            float maxX = Mathf.Max(a.x, b.x);
+
+            if (x < minX - 0.0001f || x > maxX + 0.0001f)
+            {
+                continue;
+            }
+
+            if (Mathf.Abs(b.x - a.x) < 0.0001f)
+            {
+                if (Mathf.Abs(x - a.x) <= 0.0001f)
+                {
+                    topY = Mathf.Max(topY, Mathf.Max(a.y, b.y));
+                    foundIntersection = true;
+                }
+
+                continue;
+            }
+
+            float t = (x - a.x) / (b.x - a.x);
+
+            if (t < -0.0001f || t > 1.0001f)
+            {
+                continue;
+            }
+
+            float y = Mathf.Lerp(a.y, b.y, Mathf.Clamp01(t));
+            topY = Mathf.Max(topY, y);
+            foundIntersection = true;
+        }
+
+        return foundIntersection;
     }
 
     /// <summary>
@@ -448,7 +773,46 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
         bool isWalkable
     )
     {
+        CreateOrUpdateEdge(
+            generatedIndex,
+            edgeId,
+            worldStart,
+            worldEnd,
+            worldNormal,
+            worldLength,
+            isWalkable,
+            "",
+            -1f,
+            -1f
+        );
+    }
+
+    /// <summary>
+    /// Purpose: Creates or updates one generated edge collider object with optional curved-support overrides.
+    /// Input: Generated object index, source edge id, world endpoints, world normal, world length, walkable state, optional name prefix, thickness, and padding.
+    /// Output: A positioned BoxCollider strip with the correct material, layer, visual, and edge snapshot.
+    /// </summary>
+    private void CreateOrUpdateEdge(
+        int generatedIndex,
+        int edgeId,
+        Vector3 worldStart,
+        Vector3 worldEnd,
+        Vector3 worldNormal,
+        float worldLength,
+        bool isWalkable,
+        string customNamePrefix,
+        float customThickness,
+        float customPadding
+    )
+    {
         GameObject edgeObject = GetOrCreateGeneratedEdge(generatedIndex);
+        float effectiveThickness = customThickness > 0f
+            ? customThickness
+            : platformThickness;
+
+        float effectivePadding = customPadding >= 0f
+            ? customPadding
+            : GetEffectiveEdgePadding();
 
         nextEdges.Add(new EdgeSnapshot(
             generatedIndex,
@@ -461,11 +825,18 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
         Vector3 worldDepth = shadowScreen.forward.normalized;
         Vector3 worldCenter =
             (worldStart + worldEnd) * 0.5f
-            - worldNormal * (platformThickness * 0.5f);
+            - worldNormal * (effectiveThickness * 0.5f);
 
-        edgeObject.name = isWalkable
-            ? $"GeneratedWalkableEdge_{generatedIndex:00}"
-            : $"GeneratedSteepEdge_{generatedIndex:00}";
+        if (!string.IsNullOrEmpty(customNamePrefix))
+        {
+            edgeObject.name = $"{customNamePrefix}_{generatedIndex:00}";
+        }
+        else
+        {
+            edgeObject.name = isWalkable
+                ? $"GeneratedWalkableEdge_{generatedIndex:00}"
+                : $"GeneratedSteepEdge_{generatedIndex:00}";
+        }
 
         edgeObject.transform.SetPositionAndRotation(
             worldCenter,
@@ -473,8 +844,8 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
         );
 
         edgeObject.transform.localScale = new Vector3(
-            worldLength + edgePadding * 2f,
-            platformThickness,
+            worldLength + effectivePadding * 2f,
+            effectiveThickness,
             platformDepth
         );
 
@@ -526,6 +897,87 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
         }
 
         edgeObject.SetActive(true);
+    }
+
+    /// <summary>
+    /// Purpose: Gives densely sampled curved edges a little more overlap so tiny segment joints do not create foot gaps.
+    /// Input: Base edge padding and whether curved samples were used for this rebuild.
+    /// Output: Effective padding applied to generated edge colliders.
+    /// </summary>
+    private float GetEffectiveEdgePadding()
+    {
+        if (lastCurvedSamplePointCount <= 0)
+        {
+            return edgePadding;
+        }
+
+        return edgePadding + curvedEdgeExtraPadding;
+    }
+
+    /// <summary>
+    /// Purpose: Normalizes curved-caster settings when older scene instances deserialize newly added fields as zero values.
+    /// Input: Current curved-caster configuration.
+    /// Output: Safe runtime defaults for curved sampling and top support.
+    /// </summary>
+    private void NormalizeCurvedCasterDefaults()
+    {
+        bool curvedSamplingLookedUninitialized =
+            !addCurvedCasterSamples &&
+            curvedCasterSampleCount == 0 &&
+            Mathf.Approximately(curvedCasterRadiusTolerance, 0f) &&
+            Mathf.Approximately(curvedEdgeExtraPadding, 0f);
+
+        bool curvedTopSupportLookedUninitialized =
+            !addCurvedTopSupport &&
+            Mathf.Approximately(curvedTopSupportThickness, 0f) &&
+            Mathf.Approximately(curvedTopSupportPadding, 0f) &&
+            Mathf.Approximately(curvedTopEnvelopeTolerance, 0f) &&
+            Mathf.Approximately(curvedTopSupportMinSourceNormalY, 0f);
+
+        if (curvedSamplingLookedUninitialized)
+        {
+            addCurvedCasterSamples = true;
+        }
+
+        if (curvedTopSupportLookedUninitialized)
+        {
+            addCurvedTopSupport = true;
+        }
+
+        if (curvedCasterSampleCount < 8)
+        {
+            curvedCasterSampleCount = 48;
+        }
+
+        if (curvedCasterRadiusTolerance <= 0f)
+        {
+            curvedCasterRadiusTolerance = 0.18f;
+        }
+
+        if (curvedEdgeExtraPadding <= 0f)
+        {
+            curvedEdgeExtraPadding = 0.02f;
+        }
+
+        if (curvedTopSupportThickness <= 0f)
+        {
+            curvedTopSupportThickness = 0.04f;
+        }
+
+        if (curvedTopSupportPadding <= 0f)
+        {
+            curvedTopSupportPadding = 0.035f;
+        }
+
+        if (curvedTopEnvelopeTolerance <= 0f)
+        {
+            curvedTopEnvelopeTolerance = 0.06f;
+        }
+
+        if (curvedTopSupportMinSourceNormalY <= 0f)
+        {
+            curvedTopSupportMinSourceNormalY = 0.25f;
+        }
     }
 
     /// <summary>
