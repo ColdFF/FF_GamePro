@@ -271,3 +271,75 @@ Each test entry should include:
 | Expected result | After failure, the camera should return smoothly to the original start-area focus before the death visual drops onto the platform, so the player can see the failure feedback and restart menu. |
 | Actual result | A regression caused the camera to briefly jump toward the start focus and then return to the wrong area, hiding the death visual. The failure flow was corrected so the camera locks into the start-area failure focus and moves there more naturally before the death animation appears. |
 | Status | Fixed |
+
+### 2026-05-27 - Level 02 Two-Path Layout Planning Test
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | `Level02_HiddenDoor` route concept and hidden door discovery structure |
+| Expected result | The level should support a two-path structure: one path lets the player discover the hidden end door position, while the other path becomes the real route used to reach that door. |
+| Actual result | The Level 02 layout direction was checked in the editor. The upper-left route can act as a peek route for discovering the end door, while the right-side area has enough space for a more puzzle-focused route toward the door. |
+| Status | Pass |
+
+### 2026-05-27 - Door Direction and Entry Setup Check
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Reusing the copied Level 01 end door setup in the Level 02 scene |
+| Expected result | The end door should face the correct direction for the new hidden-door layout, and the player entry target should still make sense after the door is repositioned. |
+| Actual result | The door group, visual orientation, entry target, and doorway relationship were reviewed and adjusted for the Level 02 layout. This made the copied Level 01 door setup better match the new approach direction. |
+| Status | Pass |
+
+### 2026-05-29 - Ladder Shadow Alignment Test
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Shadow ladder visual alignment from cube shadow casters |
+| Expected result | When the light is adjusted to the intended angle, the scattered cube casters should visually form a readable ladder shadow that starts near the lower platform and leads toward the upper route. |
+| Actual result | The ladder caster cubes required many placement and rotation adjustments. After iteration, the shadow forms a more readable ladder shape, with rails and rungs positioned to guide the player upward from the lower platform toward the next group of shadow platforms. |
+| Status | Pass |
+
+### 2026-05-29 - Ladder Route Connection Test
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Connection between the lower platform, ladder shadow, and upper cube-shadow route |
+| Expected result | The player should be able to understand where the ladder begins and where it should lead after the shadow ladder is formed by the light angle. |
+| Actual result | The ladder area was tested as part of the Level 02 route. The bottom of the ladder is positioned near the lower platform, and the top area connects toward the upper cube-shadow path. Further tuning is still possible, but the route now has a clearer intended direction. |
+| Status | Pass |
+
+### 2026-05-30 - Ladder Auto-Grab and Climb Animation Test
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Automatic ladder grab, climb state, and stickman climb animation |
+| Expected result | When the player jumps into the ladder trigger, the player should snap to the climb path, enter the climb animation, and climb upward only when W or the up key is held. The animation should pause when climb input is released. |
+| Actual result | The player can jump into the climb zone and automatically enter the ladder state. The `Stickman_Climb` animation plays while climbing input is held and pauses on the current frame when no climb input is pressed, giving the ladder movement a more controlled feel. |
+| Status | Pass |
+
+### 2026-05-30 - Ladder Exit Platform Carry Test
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Exiting from the top of the ladder onto the next shadow platform |
+| Expected result | After reaching the top of the ladder, the player should move to the configured ExitPoint, regain normal control, and continue being carried correctly by the moving shadow platform if the light changes. |
+| Actual result | The player exits to the configured ExitPoint and can continue moving normally. The player also follows the connected shadow platform after exiting, confirming that the ladder script restores the normal player and platform interaction state. |
+| Status | Pass |
+
+### 2026-05-30 - Multiple Ladder Zone Wrong-Exit Retest
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Multiple ladder climb zones in the same Level 02 scene |
+| Expected result | Climbing one ladder should only use that ladder's BottomPoint, TopPoint, and ExitPoint. The player should not be teleported to another ladder's exit. |
+| Actual result | A copied second ladder initially caused the player to exit at the wrong ladder because its trigger zone overlapped the first ladder area. The second climb trigger was separated and its collider placement corrected, so each ladder now uses its own climb path and exit point. |
+| Status | Fixed |
+
+### 2026-05-30 - Ladder Descend and Bottom Detach Retest
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Climbing down a ladder and detaching near the BottomPoint |
+| Expected result | Pressing S or down should play the climb animation while moving downward. Near the BottomPoint, the player should detach from the ladder and fall naturally, landing on any valid shadow or cube platform below if one is present. |
+| Actual result | Downward climbing now uses the climb animation instead of a static sprite slide. The bottom detach behaviour was tuned so the player can leave the ladder near the BottomPoint and return to normal gravity, allowing the level geometry or shadow platforms below to catch the player naturally. |
+| Status | Fixed |

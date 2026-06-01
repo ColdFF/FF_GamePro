@@ -65,3 +65,27 @@ Each entry should briefly answer:
 | What was completed? | Added and connected gameplay audio for the tutorial level, including sliding door open and close sounds, light-on and light-off cues, player jump audio, normal platform footsteps, quieter shadow-platform footsteps, falling audio, and a softer generated death landing cue. The opening light presentation was adjusted so the wash-light pulse works with the light-on sound, the initial light angle was tuned for a clearer puzzle start, and the failure camera sequence was polished so the death visual is visible again at the start-area focus. |
 | What will be worked on next? | Update documentation and asset credits for the new audio sources, generated/processed audio files, and related testing. After that, continue balancing audio volume, timing, and scene presentation during playtesting. |
 | Blockers, risks, or problems | Audio credits must stay accurate because several clips come from Freesound and one light-switch source requires attribution. Unity scene copies can also create noisy metadata or backup-file changes, so commits should keep gameplay files and documentation updates separated and reviewed carefully. |
+
+### 2026-05-27 - Level 02 Hidden Door Route Planning
+
+| Question | Notes |
+| --- | --- |
+| What was completed? | Planned the main structure for `Level02_HiddenDoor`. The level direction changed from a single route into a two-path design: one upper-left path lets the player discover and remember the hidden end door position, while the right-side route becomes the real route used to reach the door. The door direction and entry setup were reviewed so the copied Level 01 door could fit the new level layout. |
+| What will be worked on next? | Continue blocking out the right-side route and decide how the player should progress from the middle platforms toward the end door. The main design target is to make the right route feel like a puzzle route rather than only a longer platforming path. |
+| Blockers, risks, or problems | The overview camera does not show the end door at the start, so the level needs to make the player intentionally discover and remember the door position. The risk is that the two-route structure could feel confusing unless the peek route and real route connect clearly. |
+
+### 2026-05-29 - Level 02 Ladder Puzzle Layout
+
+| Question | Notes |
+| --- | --- |
+| What was completed? | Built out more of the `Level02_HiddenDoor` layout, including the left-side peek route, the connection back toward the right route, and the first shadow ladder puzzle area. The ladder puzzle was designed so several physical cubes look messy at first, but after adjusting the light angle their shadows visually form a climbable ladder. A lot of iteration went into placing the ladder caster cubes so the shadow ladder lined up at a useful angle and connected naturally from the lower platform toward the upper cube-shadow route. |
+| What will be worked on next? | Add player climbing support so the shadow ladder is not only a visual puzzle but also a playable route. The next task is to create or connect a climb animation, define climb start/end points, and make the player transition naturally from normal platforming into ladder climbing. |
+| Blockers, risks, or problems | The ladder shadow requires careful object placement and light-angle tuning. If the caster pieces are slightly off, the shadow still looks like a ladder visually but may not line up well with the player's climb path or the upper platform connection. |
+
+### 2026-05-30 - Ladder Interaction Implementation and Level 02 Progress Commit
+
+| Question | Notes |
+| --- | --- |
+| What was completed? | Implemented the playable ladder interaction for `Level02_HiddenDoor`. Added the `Stickman_Climb` animation clip, updated the Player Animator Controller with a climbing state, and added `ShadowLadderClimbZone` to handle automatic ladder grabbing, W/upward climbing, paused animation when no climb input is held, S/downward climbing, bottom detachment, top exit snapping, and multiple ladder zones. |
+| What will be worked on next? | Continue testing the right-side route and decide what challenge should come after the ladder section, especially the final approach toward the end platform and hidden door. Documentation should also be updated to record the Level 02 design and ladder testing work. |
+| Blockers, risks, or problems | Ladder interactions have several linked parts: trigger placement, BottomPoint/TopPoint/ExitPoint positions, Animator transitions, and platform carry behaviour after exiting the ladder. Small scene placement errors can cause wrong exit points, awkward snapping, or unnatural climb/down-climb behaviour, so the ladder setup needs careful retesting after future layout edits. |
