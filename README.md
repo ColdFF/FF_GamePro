@@ -31,6 +31,8 @@ The active Unity project is stored in `ShadowPath/`. Supporting documentation, i
 | Move right | `D` |
 | Run | `Shift` + `A` / `D` |
 | Jump | `W` or `Space` |
+| Climb up when on a ladder | `W` |
+| Climb down / detach near ladder bottom | `S` |
 | Adjust light direction | Arrow keys |
 
 ## Repository Structure
