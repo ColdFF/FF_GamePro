@@ -343,3 +343,75 @@ Each test entry should include:
 | Expected result | Pressing S or down should play the climb animation while moving downward. Near the BottomPoint, the player should detach from the ladder and fall naturally, landing on any valid shadow or cube platform below if one is present. |
 | Actual result | Downward climbing now uses the climb animation instead of a static sprite slide. The bottom detach behaviour was tuned so the player can leave the ladder near the BottomPoint and return to normal gravity, allowing the level geometry or shadow platforms below to catch the player naturally. |
 | Status | Fixed |
+
+### 2026-06-01 - Level 03 Route Theme Planning Check
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | `Level03_RopeTower` core level direction |
+| Expected result | The third level should introduce a clearer new theme than Level 01 and Level 02, while still building on shadow-platform traversal. |
+| Actual result | The Level 03 direction was planned around moving cube shadows and rope-shadow swinging. The design gives the level a more dynamic vertical route and creates space for repeated moving-platform timing and rope-swing transitions. |
+| Status | Pass |
+
+### 2026-06-02 - Level 03 Moving Block Setup Test
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Reusable moving cube setup in `Level03_RopeTower` |
+| Expected result | A cube with the moving-block script should move between configured points without requiring a separate animation clip for each platform. |
+| Actual result | `MovingBlock` was added so Level 03 moving shadow casters can be configured through Inspector values. This supports repeated moving platform setups without hand-building a new animation for every cube. |
+| Status | Pass |
+
+### 2026-06-02 - Moving Shadow Platform Passenger Retest
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Player stability while standing on moving projected shadow platforms |
+| Expected result | When a moving cube casts a usable shadow platform, the player should be carried by the generated shadow collider instead of falling behind or sliding away from the platform movement. |
+| Actual result | The projected shadow edge platform system was adjusted so generated edge colliders are grouped under a separate runtime root. The player can stand on moving shadow platforms and follow their movement more reliably, including faster moving casters after parameter tuning. |
+| Status | Pass |
+
+### 2026-06-03 - Rope Asset and Shadow Projection Setup Check
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | First rope setup in `Level03_RopeTower` |
+| Expected result | The imported rope should provide a usable visual rope, and its projected shadow should line up well enough to become the actual gameplay interaction target. |
+| Actual result | The required rope scripts, rope material, and rope texture files were imported from the Optimized Ropes and Cables Tool. The first rope anchor and rope end setup were placed in the scene, and the projected rope shadow was used as the basis for the first swing zone. |
+| Status | Pass |
+
+### 2026-06-03 - Rope Shadow Auto-Grab Test
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Automatic rope-shadow grabbing in `Level03_RopeTower` |
+| Expected result | When the airborne player jumps into the rope-shadow grab zone, the player should attach automatically without needing to press W or Space at the exact moment of contact. |
+| Actual result | `ShadowRopeSwingZone` supports automatic grabbing when the player enters the projected rope-shadow zone. The player hand point attaches to the projected rope end so the grab reads more naturally than attaching from the character centre. |
+| Status | Pass |
+
+### 2026-06-04 - Rope Swing Motion and Facing Retest
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Rope swing movement, player pose direction, and swing limits |
+| Expected result | A/D should act like swing acceleration, the rope and rope shadow should swing with the player, the player should face the swing direction, and the swing should not allow full loops or unnatural over-rotation. |
+| Actual result | The rope swing system now drives the rope end during swinging, bends the visual rope/shadow path, applies momentum-based input, limits extreme swing angles, softens boundary behaviour, and stabilises facing so the character does not flicker rapidly near the resting position. |
+| Status | Pass |
+
+### 2026-06-04 - Rope Release Momentum Test
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Releasing from the rope swing |
+| Expected result | Releasing the rope should launch the player using the rope's current swing momentum, even if the player only presses Space and is not holding A or D at the same time. |
+| Actual result | `PlayerController` now exposes external launch support so `ShadowRopeSwingZone` can apply release velocity and briefly preserve that momentum before normal air control resumes. The release speed can be tuned manually, and releasing while the rope is already moving produces a clearer throw-off feeling. |
+| Status | Pass |
+
+### 2026-06-04 - Level 03 Commit Scope Check
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Git commit scope for the Level 03 rope-swing prototype |
+| Expected result | The Level 03 gameplay commit should include the new scene, rope asset files needed by the prototype, new Level 03 scripts, and shared script changes required by the rope release and moving shadow systems, without committing unrelated Level 01 or Level 02 scene edits. |
+| Actual result | The committed feature branch included `Level03_RopeTower`, `MovingBlock`, `ShadowRopeSwingZone`, the required GogoGaga rope scripts/materials/textures, and the shared `PlayerController` and `ProjectedShadowAllEdgePlatform` updates. Existing Level 01 and Level 02 scene files were kept out of the feature commit. |
+| Status | Pass |

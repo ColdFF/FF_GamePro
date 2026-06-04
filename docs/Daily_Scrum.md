@@ -89,3 +89,35 @@ Each entry should briefly answer:
 | What was completed? | Implemented the playable ladder interaction for `Level02_HiddenDoor`. Added the `Stickman_Climb` animation clip, updated the Player Animator Controller with a climbing state, and added `ShadowLadderClimbZone` to handle automatic ladder grabbing, W/upward climbing, paused animation when no climb input is held, S/downward climbing, bottom detachment, top exit snapping, and multiple ladder zones. |
 | What will be worked on next? | Continue testing the right-side route and decide what challenge should come after the ladder section, especially the final approach toward the end platform and hidden door. Documentation should also be updated to record the Level 02 design and ladder testing work. |
 | Blockers, risks, or problems | Ladder interactions have several linked parts: trigger placement, BottomPoint/TopPoint/ExitPoint positions, Animator transitions, and platform carry behaviour after exiting the ladder. Small scene placement errors can cause wrong exit points, awkward snapping, or unnatural climb/down-climb behaviour, so the ladder setup needs careful retesting after future layout edits. |
+
+### 2026-06-01 - Level 03 Theme Planning
+
+| Question | Notes |
+| --- | --- |
+| What was completed? | Planned the main direction for `Level03_RopeTower`. The level theme was shaped around moving cube shadows and rope-shadow swinging, with the goal of making the route feel more vertical and more dynamic than the earlier levels. The first layout idea focused on repeated movement cycles, rope transitions, and a less predictable endpoint position. |
+| What will be worked on next? | Start blocking out the scene with simple cube platforms and moving shadow casters before adding rope assets. The first technical target is to make moving cube shadows usable without building a separate animation for every platform. |
+| Blockers, risks, or problems | The level could become too mechanically busy if moving platforms and ropes are introduced at the same time. The first prototype should keep the objects simple and test one new interaction at a time. |
+
+### 2026-06-02 - Level 03 Moving Shadow Prototype
+
+| Question | Notes |
+| --- | --- |
+| What was completed? | Added reusable moving cube behaviour for the Level 03 blockout and tested the first moving shadow platforms. The moving objects can now be configured through Inspector values, which makes it easier to reuse the mechanic across the level without creating a new animation clip for every cube. |
+| What will be worked on next? | Continue checking whether the player can stay stable on faster moving shadows, then begin preparing the first rope placement near the early Level 03 route. |
+| Blockers, risks, or problems | Faster moving shadows can expose small timing issues in player carry behaviour. The moving platform settings need to be tuned carefully so the challenge feels fair instead of unstable. |
+
+### 2026-06-03 - Rope Asset Import and Grab Prototype
+
+| Question | Notes |
+| --- | --- |
+| What was completed? | Imported the required Optimized Ropes and Cables Tool rope scripts/materials and created the first rope anchor setup for `Level03_RopeTower`. A first projected rope-shadow grab zone was created so the player can interact with the rope shadow rather than the physical rope object itself. |
+| What will be worked on next? | Improve the rope interaction so the player grabs automatically, attaches by the hand point, and moves with the rope shadow in a more readable way. The rope and its projected shadow also need to swing together instead of behaving like separate objects. |
+| Blockers, risks, or problems | The rope visual, rope shadow, player hand point, and projected trigger zone all need to stay aligned. Small offset errors can make the interaction look disconnected even when the gameplay trigger works. |
+
+### 2026-06-04 - Level 03 Rope Swing Prototype Commit
+
+| Question | Notes |
+| --- | --- |
+| What was completed? | Refined the first rope-swing prototype with automatic grabbing, hand attachment, player-facing changes, swing limits, Shift-assisted swing boost, and release momentum. Shared player-launch and projected-shadow edge behaviour were updated to support the new rope and moving-shadow mechanics, and the first Level 03 prototype was committed through a feature branch. |
+| What will be worked on next? | Continue building out the full Level 03 route with more moving shadow platforms and additional rope-swing sections. The next design work should focus on pacing, difficulty progression, repeated swing chains, and connecting the prototype mechanic into a complete level with a clear endpoint. |
+| Blockers, risks, or problems | Rope swinging has several tuning-sensitive values, including grab distance, hand offset, swing acceleration, release velocity, maximum angle, and Shift boost strength. The new shared script changes should keep being retested in earlier levels so Level 03 progress does not accidentally weaken existing shadow-platform or player-movement behaviour. |
