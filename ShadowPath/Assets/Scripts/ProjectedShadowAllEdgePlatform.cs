@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -91,6 +91,7 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
     [SerializeField] private string lastBuildMessage;
 
     private readonly List<GameObject> generatedEdges = new List<GameObject>();
+    private Transform generatedEdgeRoot;
     private readonly List<EdgeSnapshot> previousEdges = new List<EdgeSnapshot>();
     private readonly List<EdgeSnapshot> nextEdges = new List<EdgeSnapshot>();
 
@@ -980,6 +981,20 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
         }
     }
 
+    private Transform GetOrCreateGeneratedEdgeRoot()
+    {
+        if (generatedEdgeRoot != null)
+        {
+            return generatedEdgeRoot;
+        }
+
+        GameObject root = new GameObject($"{name}_GeneratedShadowEdges");
+        root.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+        root.transform.localScale = Vector3.one;
+        generatedEdgeRoot = root.transform;
+        return generatedEdgeRoot;
+    }
+
     /// <summary>
     /// Purpose: Gets or creates a reusable generated edge GameObject.
     /// Input: Generated edge object index.
@@ -991,7 +1006,7 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
         {
             GameObject edgeObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
             edgeObject.name = $"GeneratedEdge_{generatedEdges.Count:00}";
-            edgeObject.transform.SetParent(transform, true);
+            edgeObject.transform.SetParent(GetOrCreateGeneratedEdgeRoot(), true);
             generatedEdges.Add(edgeObject);
         }
 
@@ -1356,3 +1371,4 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
         previousEdges.AddRange(nextEdges);
     }
 }
+

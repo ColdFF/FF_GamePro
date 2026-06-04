@@ -36,6 +36,9 @@ public class PlayerController : MonoBehaviour
     public float coyoteTime = 0.1f;
     public float postJumpGroundLockTime = 0.12f;
 
+    [Header("External Launch")]
+    public float externalLaunchAirControlDelay = 0.22f;
+
     [Header("Jump Audio")]
     public AudioSource playerAudioSource;
     public AudioClip jumpSound;
@@ -65,6 +68,7 @@ public class PlayerController : MonoBehaviour
     private float jumpBufferCounter;
     private float coyoteCounter;
     private float postJumpGroundLockCounter;
+    private float externalLaunchAirControlCounter;
     private float footstepCounter;
     private Vector3 groundNormal = Vector3.up;
     private Collider currentGroundCollider;
@@ -119,6 +123,32 @@ public class PlayerController : MonoBehaviour
         }
 
         UpdateAnimation();
+    }
+
+    /// <summary>
+    /// Purpose: Applies an external launch velocity and briefly prevents normal air control from overwriting it.
+    /// Input: Launch velocity and optional air-control delay.
+    /// Output: The player keeps rope or scripted launch momentum even when no horizontal key is held.
+    /// </summary>
+    public void ApplyExternalLaunch(Vector3 launchVelocity, float airControlDelay = -1f)
+    {
+        if (rb == null)
+        {
+            rb = GetComponent<Rigidbody>();
+        }
+
+        if (rb != null)
+        {
+            rb.velocity = launchVelocity;
+        }
+
+        externalLaunchAirControlCounter = Mathf.Max(
+            0f,
+            airControlDelay >= 0f ? airControlDelay : externalLaunchAirControlDelay
+        );
+
+        postJumpGroundLockCounter = Mathf.Max(postJumpGroundLockCounter, postJumpGroundLockTime);
+        ClearGroundState();
     }
 
     // Purpose: Reads frame-based player input and updates animation state.
@@ -454,6 +484,8 @@ public class PlayerController : MonoBehaviour
 
         if (isGrounded)
         {
+            externalLaunchAirControlCounter = 0f;
+
             if (isMoving)
             {
                 Vector3 slopeVelocity = GetSlopeMoveVelocity(moveInput, currentSpeed);
@@ -477,7 +509,14 @@ public class PlayerController : MonoBehaviour
         }
         else
         {
-            if (IsPressingIntoWallOrSteepEdge(moveInput))
+            if (externalLaunchAirControlCounter > 0f)
+            {
+                externalLaunchAirControlCounter = Mathf.Max(
+                    0f,
+                    externalLaunchAirControlCounter - Time.fixedDeltaTime
+                );
+            }
+            else if (IsPressingIntoWallOrSteepEdge(moveInput))
             {
                 velocity.x = 0f;
             }
