@@ -27,12 +27,15 @@ The active Unity project is stored in `ShadowPath/`. Supporting documentation, i
 
 | Action | Input |
 | --- | --- |
-| Move left | `A` |
-| Move right | `D` |
+| Move left / swing rope left | `A` |
+| Move right / swing rope right | `D` |
 | Run | `Shift` + `A` / `D` |
 | Jump | `W` or `Space` |
 | Climb up when on a ladder | `W` |
 | Climb down / detach near ladder bottom | `S` |
+| Auto-grab rope shadow | Jump into a rope-shadow grab zone |
+| Release rope while swinging | `Space` |
+| Boost rope swing | Hold `Shift` while swinging |
 | Adjust light direction | Arrow keys |
 
 ## Repository Structure
