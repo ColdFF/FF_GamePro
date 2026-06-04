@@ -415,3 +415,66 @@ Each test entry should include:
 | Expected result | The Level 03 gameplay commit should include the new scene, rope asset files needed by the prototype, new Level 03 scripts, and shared script changes required by the rope release and moving shadow systems, without committing unrelated Level 01 or Level 02 scene edits. |
 | Actual result | The committed feature branch included `Level03_RopeTower`, `MovingBlock`, `ShadowRopeSwingZone`, the required GogoGaga rope scripts/materials/textures, and the shared `PlayerController` and `ProjectedShadowAllEdgePlatform` updates. Existing Level 01 and Level 02 scene files were kept out of the feature commit. |
 | Status | Pass |
+
+### 2026-06-05 - Rope Auto-Grab and Space Release Retest
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Rope grab and release input in `Level03_RopeTower` |
+| Expected result | The player should automatically grab a valid rope shadow when entering the grab zone, while Space should only release the rope. Pressing Space near a quiet or resting rope should not immediately detach and reattach the player in the same moment. |
+| Actual result | `ShadowRopeSwingZone` now keeps rope grabbing automatic and reserves Space for release. A short release/re-grab guard prevents the player from being pulled straight back onto the same rope immediately after letting go. |
+| Status | Fixed |
+
+### 2026-06-05 - Slow Rope Release Momentum Retest
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Rope release momentum from slow or idle swings |
+| Expected result | Releasing from a rope with little swing speed should not create an obvious artificial speed boost or a backward pop. The launch should mainly reflect the rope's actual motion and the configured release tuning. |
+| Actual result | Rope release handling was adjusted so idle and slow releases use more controlled momentum instead of always applying a strong launch. This makes letting go near the rope's resting position feel less like the player is being pushed backward. |
+| Status | Fixed |
+
+### 2026-06-05 - Repeated Rope Use Stability Retest
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Reusing the same rope multiple times |
+| Expected result | After repeated grabs, swings, and releases, the rope should return to a natural resting direction and the player's later A/D swing control should still feel consistent. |
+| Actual result | The rope interaction was stabilised so repeated use no longer leaves the rope biased toward the player's last release direction. Later swings remain more natural because the player attachment, release state, and rope rest behaviour are reset more cleanly between uses. |
+| Status | Fixed |
+
+### 2026-06-05 - Moving Rope Shape Retest
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Rope visual behaviour when the rope setup is parented to a moving block |
+| Expected result | A rope attached to a moving object should move with the object while keeping its intended hanging shape. The rope should not appear bent only because the parent object moved. |
+| Actual result | The rope script now includes shape-preservation support for parent movement, so moving rope groups can be used in Level 03 without the rope visually warping as the parent object travels. |
+| Status | Fixed |
+
+### 2026-06-05 - MovingCaster_07 Shadow Platform Retest
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Player running and jumping on the `MovingCaster_07` generated shadow platform |
+| Expected result | The player should be able to run and jump naturally on the generated shadow platform, without feeling blocked by incorrect edge matching or hidden collision restrictions. |
+| Actual result | Generated shadow edge handling was refined for the problematic moving caster setup. The player can use the intended upper shadow support more reliably, reducing the earlier feeling of being held back or forced into weak jumps on that section. |
+| Status | Fixed |
+
+### 2026-06-05 - Level 03 Completion Overview Camera Check
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | End-of-level camera overview for `Level03_RopeTower` |
+| Expected result | After completing Level 03, the camera should return to a wide overview that shows the intended full level route without exposing unnecessary outside space. |
+| Actual result | `TutorialCameraController` now supports a separate end overview shot, and the Level 03 scene stores a calculated end overview position and orthographic size for the completion sequence. |
+| Status | Pass |
+
+### 2026-06-05 - Level 03 Rope Polish Commit Scope Check
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Git commit scope for the Level 03 rope path polish update |
+| Expected result | The polish commit should include only the intended Level 03 rope, moving shadow platform, shared player/controller, and completion camera changes, without adding unrelated `ProjectSettings`, `Packages`, Level 01 scene, Level 02 scene, terrain, or rope example files. |
+| Actual result | The final staged gameplay commit contained only six intended files: `Rope.cs`, `Level03_RopeTower.unity`, `PlayerController.cs`, `ProjectedShadowAllEdgePlatform.cs`, `ShadowRopeSwingZone.cs`, and `TutorialCameraController.cs`. Whitespace checks passed before committing, and the working tree was clean afterwards. |
+| Status | Pass |
