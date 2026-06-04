@@ -53,6 +53,7 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
 
     [Header("Edge Selection Debug")]
     public bool buildAllEdgesForDebug = true;
+    public bool walkableEdgesMustBeUpperEnvelope = false;
     public bool flipWalkableNormal = false;
     public bool useOppositeNormalFallback = true;
 
@@ -70,8 +71,11 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
     public string playerTag = "Player";
     public float passengerContactTolerance = 0.35f;
     public float maxPassengerUpwardSpeed = 1f;
+    public float minCarryDistancePerStep = 0.005f;
     public float maxCarryDistancePerStep = 0.25f;
     public float maxEdgeMatchDistance = 1.2f;
+    [Range(0f, 1f)]
+    public float minCarryEdgeDirectionDot = 0.75f;
 
     [Range(-1f, 1f)]
     public float minEdgeDirectionDot = 0f;
@@ -576,11 +580,18 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
             }
 
             bool isWalkable = Vector3.Dot(worldNormal, Vector3.up) >= minWalkableNormalY;
+            bool isUpperEnvelopeEdge = IsUpperEnvelopeEdge(hull, localStart, localEnd);
+
+            if (isWalkable && walkableEdgesMustBeUpperEnvelope && !isUpperEnvelopeEdge)
+            {
+                isWalkable = false;
+            }
+
             bool useCurvedSupportOverrides =
                 currentBuildUsesCurvedSamples &&
                 addCurvedTopSupport &&
                 isWalkable &&
-                IsUpperEnvelopeEdge(hull, localStart, localEnd);
+                isUpperEnvelopeEdge;
 
             if (!buildAllEdgesForDebug && !isWalkable)
             {
@@ -1101,6 +1112,12 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
         );
 
         Vector3 delta = nextAnchor - previousAnchor;
+        float minCarryDistance = Mathf.Max(0.005f, minCarryDistancePerStep);
+
+        if (delta.sqrMagnitude < minCarryDistance * minCarryDistance)
+        {
+            return;
+        }
 
         if (delta.magnitude > maxCarryDistancePerStep)
         {
@@ -1270,7 +1287,12 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
                 Vector3.Dot(previousDirection, candidateDirection)
             );
 
-            if (directionDot < minEdgeDirectionDot)
+            float requiredDirectionDot = Mathf.Max(
+                minEdgeDirectionDot,
+                Mathf.Max(0.75f, minCarryEdgeDirectionDot)
+            );
+
+            if (directionDot < requiredDirectionDot)
             {
                 continue;
             }

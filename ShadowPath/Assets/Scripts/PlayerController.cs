@@ -561,6 +561,11 @@ public class PlayerController : MonoBehaviour
 
         float normalY = hit.normal.y;
 
+        if (IsWalkableGeneratedShadowCollider(hit.collider))
+        {
+            return false;
+        }
+
         return normalY <= maxWallClimbNormalY;
     }
 
@@ -584,16 +589,37 @@ public class PlayerController : MonoBehaviour
             slopeDirection = -slopeDirection;
         }
 
-        if (!preserveHorizontalSpeedOnSlopes)
+        bool isOnShadowSurface = IsStandingOnShadowSurface();
+        bool shouldPreserveHorizontalSpeed =
+            preserveHorizontalSpeedOnSlopes ||
+            isOnShadowSurface;
+
+        if (!shouldPreserveHorizontalSpeed)
         {
             return slopeDirection * speed;
         }
 
         float safeHorizontalAmount = Mathf.Max(Mathf.Abs(slopeDirection.x), 0.2f);
         Vector3 targetVelocity = slopeDirection * (speed / safeHorizontalAmount);
-        float maxAllowedSpeed = speed * maxSlopeSpeedMultiplier;
+        float effectiveSlopeSpeedMultiplier = isOnShadowSurface
+            ? Mathf.Max(maxSlopeSpeedMultiplier, 1.35f)
+            : maxSlopeSpeedMultiplier;
+        float maxAllowedSpeed = speed * effectiveSlopeSpeedMultiplier;
 
         return Vector3.ClampMagnitude(targetVelocity, maxAllowedSpeed);
+    }
+
+    bool IsWalkableGeneratedShadowCollider(Collider hitCollider)
+    {
+        if (hitCollider == null)
+        {
+            return false;
+        }
+
+        string colliderName = hitCollider.name;
+
+        return colliderName.Contains("GeneratedWalkableEdge") ||
+               colliderName.Contains("GeneratedCurvedWalkableEdge");
     }
 
     // Purpose: Flips the visual sprite based on movement direction.

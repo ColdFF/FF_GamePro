@@ -51,6 +51,12 @@ namespace GogoGaga.OptimizedRopesAndCables
         [Tooltip("Position of the midpoint along the line between start and end points")]
         [Range(0.25f, 0.75f)] public float midPointPosition = 0.5f;
 
+        [Header("Moving Parent Stabilization")]
+        [Tooltip("Keeps the simulated rope shape with the rope object when a moving parent translates the whole rope.")]
+        public bool keepShapeWhenParentMoves = true;
+        [Tooltip("How closely the rope object and start point must move together to count as whole-rope motion.")]
+        [Min(0f)] public float parentMoveTolerance = 0.03f;
+
         private Vector3 currentValue;
         private Vector3 currentVelocity;
         private Vector3 targetValue;
@@ -63,8 +69,10 @@ namespace GogoGaga.OptimizedRopesAndCables
 
         private Vector3 prevStartPointPosition;
         private Vector3 prevEndPointPosition;
+        private Vector3 prevRopeTransformPosition;
         private float prevMidPointPosition;
         private float prevMidPointWeight;
+        private bool hasPreviousRuntimePositions;
 
         private float prevLineQuality;
         private float prevRopeWidth;
@@ -84,6 +92,7 @@ namespace GogoGaga.OptimizedRopesAndCables
                 targetValue = currentValue;
                 currentVelocity = Vector3.zero;
                 SetSplinePoint(); // Ensure initial spline point is set correctly
+                CacheCurrentPositions();
             }
         }
 
@@ -124,6 +133,7 @@ namespace GogoGaga.OptimizedRopesAndCables
             
             if (AreEndPointsValid())
             {
+                ApplyWholeRopeMotionOffset();
                 SetSplinePoint();
 
                 if (!Application.isPlaying && (IsPointsMoved() || IsRopeSettingsChanged()))
@@ -132,16 +142,7 @@ namespace GogoGaga.OptimizedRopesAndCables
                     NotifyPointsChanged();
                 }
 
-                prevStartPointPosition = startPoint.position;
-                prevEndPointPosition = endPoint.position;
-                prevMidPointPosition = midPointPosition;
-                prevMidPointWeight = midPointWeight;
-
-                prevLineQuality = linePoints;
-                prevRopeWidth = ropeWidth;
-                prevstiffness = stiffness;
-                prevDampness = damping;
-                prevRopeLength = ropeLength;
+                CacheCurrentPositions();
             }
         }
 
@@ -217,6 +218,29 @@ namespace GogoGaga.OptimizedRopesAndCables
             }
 
             return GetRationalBezierPoint(startPoint.position, currentValue, endPoint.position, t, StartPointWeight, midPointWeight, EndPointWeight);
+        }
+
+        private void ApplyWholeRopeMotionOffset()
+        {
+            if (!Application.isPlaying || !keepShapeWhenParentMoves || !hasPreviousRuntimePositions)
+            {
+                return;
+            }
+
+            Vector3 ropeDelta = transform.position - prevRopeTransformPosition;
+            if (ropeDelta.sqrMagnitude <= Mathf.Epsilon)
+            {
+                return;
+            }
+
+            Vector3 startDelta = startPoint.position - prevStartPointPosition;
+            if ((startDelta - ropeDelta).magnitude > parentMoveTolerance)
+            {
+                return;
+            }
+
+            currentValue += ropeDelta;
+            targetValue += ropeDelta;
         }
 
         private void FixedUpdate()
@@ -316,11 +340,32 @@ namespace GogoGaga.OptimizedRopesAndCables
             targetValue = currentValue;
             currentVelocity = Vector3.zero;
             SetSplinePoint();
+            CacheCurrentPositions();
         }
 
         private void NotifyPointsChanged()
         {
             OnPointsChanged?.Invoke();
+        }
+
+        private void CacheCurrentPositions()
+        {
+            prevStartPointPosition = startPoint.position;
+            prevEndPointPosition = endPoint.position;
+            prevRopeTransformPosition = transform.position;
+            prevMidPointPosition = midPointPosition;
+            prevMidPointWeight = midPointWeight;
+
+            prevLineQuality = linePoints;
+            prevRopeWidth = ropeWidth;
+            prevstiffness = stiffness;
+            prevDampness = damping;
+            prevRopeLength = ropeLength;
+
+            if (Application.isPlaying)
+            {
+                hasPreviousRuntimePositions = true;
+            }
         }
 
         private bool IsPointsMoved()
