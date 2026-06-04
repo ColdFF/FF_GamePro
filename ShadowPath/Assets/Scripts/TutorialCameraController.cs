@@ -15,6 +15,11 @@ public class TutorialCameraController : MonoBehaviour
     public float overviewSize = 7f;
     public float overviewHoldTime = 1.2f;
 
+    [Header("End Overview Shot")]
+    public bool useSeparateEndOverviewShot = false;
+    public Vector3 endOverviewPosition = new Vector3(8.5f, 3.9f, -10f);
+    public float endOverviewSize = 7f;
+
     [Header("Follow Shot")]
     public Vector3 followOffset = new Vector3(2.2f, 0.9f, -10f);
     public float followSize = 3.8f;
@@ -293,33 +298,46 @@ public class TutorialCameraController : MonoBehaviour
     /// </summary>
     void UpdateReturnCamera()
     {
+        Vector3 returnOverviewPosition = GetReturnOverviewPosition();
+        float returnOverviewSize = GetReturnOverviewSize();
+
         transform.position = Vector3.SmoothDamp(
             transform.position,
-            overviewPosition,
+            returnOverviewPosition,
             ref followVelocity,
             Mathf.Max(0.01f, returnSmoothTime)
         );
 
         cameraComponent.orthographicSize = Mathf.SmoothDamp(
             cameraComponent.orthographicSize,
-            overviewSize,
+            returnOverviewSize,
             ref zoomVelocity,
             Mathf.Max(0.01f, returnZoomDuration)
         );
 
-        bool positionSettled = Vector3.Distance(transform.position, overviewPosition) < 0.02f;
-        bool sizeSettled = Mathf.Abs(cameraComponent.orthographicSize - overviewSize) < 0.02f;
+        bool positionSettled = Vector3.Distance(transform.position, returnOverviewPosition) < 0.02f;
+        bool sizeSettled = Mathf.Abs(cameraComponent.orthographicSize - returnOverviewSize) < 0.02f;
 
         if (positionSettled && sizeSettled)
         {
-            transform.position = overviewPosition;
-            cameraComponent.orthographicSize = overviewSize;
+            transform.position = returnOverviewPosition;
+            cameraComponent.orthographicSize = returnOverviewSize;
             isReturningToOverview = false;
             hasReturnedToOverview = true;
             timer = 0f;
 
             PlayReturnBlackout();
         }
+    }
+
+    Vector3 GetReturnOverviewPosition()
+    {
+        return useSeparateEndOverviewShot ? endOverviewPosition : overviewPosition;
+    }
+
+    float GetReturnOverviewSize()
+    {
+        return useSeparateEndOverviewShot ? endOverviewSize : overviewSize;
     }
 
     /// <summary>

@@ -80,9 +80,17 @@ public class ShadowRopeSwingZone : MonoBehaviour
     public float minReleaseTangentialSpeed = 3.2f;
     public bool useManualReleaseSpeed = true;
     public float manualReleaseTangentialSpeed = 5.2f;
+    public bool scaleReleaseAssistBySwingMotion = true;
+    public float releaseAssistMinAngle = 4f;
+    public float releaseAssistFullAngle = 18f;
+    public float releaseAssistMinSpeed = 0.6f;
+    public float releaseAssistFullSpeed = 3f;
     public float releaseAirControlDelay = 0.24f;
     public float releaseInputSpeedBoost = 0.8f;
     public float releaseShiftSpeedBoost = 0.8f;
+    public bool scaleShiftReleaseBoostByCurrentSpeed = true;
+    public float shiftReleaseBoostMinSpeed = 2.5f;
+    public float shiftReleaseBoostFullSpeed = 5f;
     public float releaseApexSpeedBoost = 0.9f;
     public float releaseUpwardBoost = 0.4f;
     public float maxReleaseSpeed = 8f;
@@ -92,6 +100,7 @@ public class ShadowRopeSwingZone : MonoBehaviour
     public KeyCode alternateGrabKey = KeyCode.Space;
     public KeyCode releaseKey = KeyCode.Space;
     public KeyCode alternateReleaseKey = KeyCode.S;
+    public bool allowManualGrabInput = false;
     public KeyCode leftKey = KeyCode.A;
     public KeyCode rightKey = KeyCode.D;
     public KeyCode boostKey = KeyCode.LeftShift;
@@ -135,6 +144,10 @@ public class ShadowRopeSwingZone : MonoBehaviour
     private float angularVelocity;
     private float playerPlaneZ;
     private Vector3 attachedHandOffsetFromPlayer;
+    private Transform initialRopeEndParent;
+    private Vector3 initialRopeEndLocalPosition;
+    private Vector3 initialRopeEndWorldPosition;
+    private bool hasInitialRopeRestState;
     private Vector3 ropeRestEndWorldPosition;
     private Vector3 ropeRestEndOffset;
     private float ropeRestAngle;
@@ -158,6 +171,7 @@ public class ShadowRopeSwingZone : MonoBehaviour
     private int swingPoseIndex;
     private bool releaseRequested;
     private float autoGrabCooldownTimer;
+    private bool blockAutoGrabUntilPlayerLeavesRange;
 
     private void Reset()
     {
@@ -167,6 +181,15 @@ public class ShadowRopeSwingZone : MonoBehaviour
     private void Awake()
     {
         ConfigureCollider();
+        CacheInitialRopeRestState();
+    }
+
+    private void OnEnable()
+    {
+        if (!Application.isPlaying)
+        {
+            CacheInitialRopeRestState();
+        }
     }
 
     private void Update()
@@ -184,6 +207,7 @@ public class ShadowRopeSwingZone : MonoBehaviour
         }
 
         UpdateHandGrabDiagnostics();
+        UpdateAutoGrabReleaseBlock();
         bool autoGrabAllowed = CanAutoGrab();
 
         if (playerAttached)
@@ -300,6 +324,11 @@ public class ShadowRopeSwingZone : MonoBehaviour
         if (candidatePlayerCollider == other)
         {
             candidatePlayerCollider = null;
+        }
+
+        if (!useHandDistanceGrab)
+        {
+            blockAutoGrabUntilPlayerLeavesRange = false;
         }
     }
 
@@ -429,7 +458,8 @@ public class ShadowRopeSwingZone : MonoBehaviour
 
     private bool IsGrabPressed()
     {
-        return Input.GetKeyDown(grabKey) || Input.GetKeyDown(alternateGrabKey);
+        return allowManualGrabInput &&
+               (Input.GetKeyDown(grabKey) || Input.GetKeyDown(alternateGrabKey));
     }
 
     private bool IsReleasePressed()
@@ -439,7 +469,7 @@ public class ShadowRopeSwingZone : MonoBehaviour
 
     private bool CanAutoGrab(Collider playerCollider = null)
     {
-        if (!autoGrabOnEnter || autoGrabCooldownTimer > 0f)
+        if (!autoGrabOnEnter || autoGrabCooldownTimer > 0f || blockAutoGrabUntilPlayerLeavesRange)
         {
             return false;
         }
@@ -464,6 +494,29 @@ public class ShadowRopeSwingZone : MonoBehaviour
         }
 
         return playerRigidbody != null && Mathf.Abs(playerRigidbody.velocity.y) > 0.05f;
+    }
+
+    private void UpdateAutoGrabReleaseBlock()
+    {
+        if (!blockAutoGrabUntilPlayerLeavesRange)
+        {
+            return;
+        }
+
+        if (useHandDistanceGrab)
+        {
+            if (!handInGrabRange)
+            {
+                blockAutoGrabUntilPlayerLeavesRange = false;
+            }
+
+            return;
+        }
+
+        if (candidatePlayerCollider == null)
+        {
+            blockAutoGrabUntilPlayerLeavesRange = false;
+        }
     }
 
     private float GetSwingInput()
@@ -511,8 +564,17 @@ public class ShadowRopeSwingZone : MonoBehaviour
 
         playerAttached = true;
         releaseRequested = false;
+        blockAutoGrabUntilPlayerLeavesRange = false;
         playerPlaneZ = player.position.z;
+        bool wasSettlingAfterRelease = ropeSettlingAfterRelease;
+        float inheritedAngularVelocity = wasSettlingAfterRelease ? angularVelocity : 0f;
         ropeSettlingAfterRelease = false;
+
+        if (!wasSettlingAfterRelease)
+        {
+            RestoreRopeEndToRestPose();
+        }
+
         CaptureRopeRestState();
 
         if (faceRopeOnAttach)
@@ -551,7 +613,7 @@ public class ShadowRopeSwingZone : MonoBehaviour
 
         swingRadius = Mathf.Max(minSwingRadius, initialSwingRadius);
         swingAngle = Mathf.Atan2(ropeOffset.x, -ropeOffset.y);
-        angularVelocity = 0f;
+        angularVelocity = inheritedAngularVelocity;
         attachSnapTimer = Mathf.Max(0f, attachSnapDuration);
         attachSnapStartHandPosition = handPosition;
         previousHandTargetPosition = handPosition;
@@ -691,7 +753,7 @@ public class ShadowRopeSwingZone : MonoBehaviour
 
             if (remainingAngle <= settleAngleTolerance && Mathf.Abs(angularVelocity) <= settleAngularSpeedTolerance)
             {
-                ropeEnd.position = ropeRestEndWorldPosition;
+                RestoreRopeEndToRestPose();
                 swingAngle = ropeRestAngle;
                 angularVelocity = 0f;
                 ropeSettlingAfterRelease = false;
@@ -850,14 +912,79 @@ public class ShadowRopeSwingZone : MonoBehaviour
             return;
         }
 
-        ropeRestEndWorldPosition = ropeEnd.position;
-        ropeRestEndOffset = ropeEnd.position - ropeStart.position;
+        if (!hasInitialRopeRestState)
+        {
+            CacheInitialRopeRestState();
+        }
+
+        ropeRestEndWorldPosition = hasInitialRopeRestState
+            ? GetInitialRopeEndWorldPosition()
+            : ropeEnd.position;
+        ropeRestEndOffset = ropeRestEndWorldPosition - ropeStart.position;
         ropeRestZOffset = ropeRestEndOffset.z;
 
         float planarLength = new Vector2(ropeRestEndOffset.x, ropeRestEndOffset.y).magnitude;
         swingRadius = Mathf.Max(minSwingRadius, planarLength);
         ropeRestAngle = Mathf.Atan2(ropeRestEndOffset.x, -ropeRestEndOffset.y);
         hasRopeRestState = true;
+    }
+
+    private void CacheInitialRopeRestState()
+    {
+        if (ropeEnd == null)
+        {
+            hasInitialRopeRestState = false;
+            return;
+        }
+
+        initialRopeEndParent = ropeEnd.parent;
+        initialRopeEndLocalPosition = ropeEnd.localPosition;
+        initialRopeEndWorldPosition = ropeEnd.position;
+        hasInitialRopeRestState = true;
+    }
+
+    private Vector3 GetInitialRopeEndWorldPosition()
+    {
+        if (!hasInitialRopeRestState)
+        {
+            return ropeEnd != null ? ropeEnd.position : Vector3.zero;
+        }
+
+        if (ropeEnd != null && ropeEnd.parent == initialRopeEndParent)
+        {
+            return initialRopeEndParent != null
+                ? initialRopeEndParent.TransformPoint(initialRopeEndLocalPosition)
+                : initialRopeEndLocalPosition;
+        }
+
+        return initialRopeEndWorldPosition;
+    }
+
+    private void RestoreRopeEndToRestPose()
+    {
+        if (!driveRopeEndWhileSwinging || ropeEnd == null)
+        {
+            return;
+        }
+
+        if (!hasInitialRopeRestState)
+        {
+            CacheInitialRopeRestState();
+        }
+
+        if (!hasInitialRopeRestState)
+        {
+            return;
+        }
+
+        if (ropeEnd.parent == initialRopeEndParent)
+        {
+            ropeEnd.localPosition = initialRopeEndLocalPosition;
+        }
+        else
+        {
+            ropeEnd.position = initialRopeEndWorldPosition;
+        }
     }
 
     private void DriveRopeEndFromSwingAngle()
@@ -1281,6 +1408,7 @@ public class ShadowRopeSwingZone : MonoBehaviour
         if (applyReleaseVelocity)
         {
             autoGrabCooldownTimer = Mathf.Max(0f, releaseAutoGrabCooldown);
+            blockAutoGrabUntilPlayerLeavesRange = true;
             ropeSettlingAfterRelease = keepRopeSwingingAfterRelease && driveRopeEndWhileSwinging;
         }
         else
@@ -1289,7 +1417,7 @@ public class ShadowRopeSwingZone : MonoBehaviour
 
             if (driveRopeEndWhileSwinging && hasRopeRestState && ropeEnd != null)
             {
-                ropeEnd.position = ropeRestEndWorldPosition;
+                RestoreRopeEndToRestPose();
                 UpdateGrabZone();
             }
         }
@@ -1297,29 +1425,38 @@ public class ShadowRopeSwingZone : MonoBehaviour
 
     private Vector3 GetReleaseVelocity()
     {
-        Vector3 tangent = new Vector3(
+        Vector3 baseTangent = new Vector3(
             Mathf.Cos(swingAngle),
             Mathf.Sin(swingAngle),
             0f
-        ).normalized * Mathf.Sign(lastReleaseDirectionSign);
+        ).normalized;
 
         Vector3 releaseVelocity = handTargetVelocity * releaseSpeedMultiplier;
+        float signedTangentialSpeed = Vector3.Dot(releaseVelocity, baseTangent);
+        float releaseDirectionSign = GetReleaseDirectionSign(signedTangentialSpeed);
+        Vector3 tangent = baseTangent * releaseDirectionSign;
         float tangentialSpeed = Vector3.Dot(releaseVelocity, tangent);
         float angleFromRestDegrees = Mathf.Abs(GetAngleFromRestRadians()) * Mathf.Rad2Deg;
+        float releaseAssistAmount = GetReleaseAssistAmount(Mathf.Abs(signedTangentialSpeed), angleFromRestDegrees);
         float apexAmount = Mathf.InverseLerp(25f, Mathf.Max(26f, maxSwingAngleFromRest), angleFromRestDegrees);
         float inputBoost = Mathf.Abs(lastRawSwingInput) >= facingInputThreshold ? releaseInputSpeedBoost : 0f;
-        float shiftBoost = lastBoostInputHeld ? releaseShiftSpeedBoost : 0f;
+        float shiftBoost = GetShiftReleaseBoost(Mathf.Abs(tangentialSpeed));
         float baseTangentialSpeed = useManualReleaseSpeed
             ? manualReleaseTangentialSpeed
             : minReleaseTangentialSpeed;
-        float targetTangentialSpeed = baseTangentialSpeed + inputBoost + shiftBoost + releaseApexSpeedBoost * apexAmount;
+        float targetTangentialSpeed = (
+            baseTangentialSpeed +
+            inputBoost +
+            shiftBoost +
+            releaseApexSpeedBoost * apexAmount
+        ) * releaseAssistAmount;
 
         if (tangentialSpeed < targetTangentialSpeed)
         {
             releaseVelocity += tangent * (targetTangentialSpeed - tangentialSpeed);
         }
 
-        releaseVelocity.y += releaseUpwardBoost;
+        releaseVelocity.y += releaseUpwardBoost * releaseAssistAmount;
 
         if (releaseVelocity.magnitude > maxReleaseSpeed)
         {
@@ -1327,6 +1464,63 @@ public class ShadowRopeSwingZone : MonoBehaviour
         }
 
         return releaseVelocity;
+    }
+
+    private float GetReleaseDirectionSign(float signedTangentialSpeed)
+    {
+        if (Mathf.Abs(lastRawSwingInput) >= facingInputThreshold)
+        {
+            return Mathf.Sign(lastRawSwingInput);
+        }
+
+        if (Mathf.Abs(angularVelocity) >= minAssistAngularSpeed)
+        {
+            return Mathf.Sign(angularVelocity);
+        }
+
+        if (Mathf.Abs(signedTangentialSpeed) > 0.05f)
+        {
+            return Mathf.Sign(signedTangentialSpeed);
+        }
+
+        return Mathf.Sign(lastReleaseDirectionSign);
+    }
+
+    private float GetReleaseAssistAmount(float currentTangentialSpeed, float angleFromRestDegrees)
+    {
+        if (!scaleReleaseAssistBySwingMotion)
+        {
+            return 1f;
+        }
+
+        float fullAngle = Mathf.Max(0.01f, releaseAssistFullAngle);
+        float minAngle = Mathf.Clamp(releaseAssistMinAngle, 0f, fullAngle - 0.01f);
+        float angleAmount = Mathf.InverseLerp(minAngle, fullAngle, angleFromRestDegrees);
+
+        float fullSpeed = Mathf.Max(0.01f, releaseAssistFullSpeed);
+        float minSpeed = Mathf.Clamp(releaseAssistMinSpeed, 0f, fullSpeed - 0.01f);
+        float speedAmount = Mathf.InverseLerp(minSpeed, fullSpeed, currentTangentialSpeed);
+
+        return Mathf.Max(angleAmount, speedAmount);
+    }
+
+    private float GetShiftReleaseBoost(float currentTangentialSpeed)
+    {
+        if (!lastBoostInputHeld || releaseShiftSpeedBoost <= 0f)
+        {
+            return 0f;
+        }
+
+        if (!scaleShiftReleaseBoostByCurrentSpeed)
+        {
+            return releaseShiftSpeedBoost;
+        }
+
+        float fullSpeed = Mathf.Max(0.01f, shiftReleaseBoostFullSpeed);
+        float minSpeed = Mathf.Clamp(shiftReleaseBoostMinSpeed, 0f, fullSpeed - 0.01f);
+        float speedAmount = Mathf.InverseLerp(minSpeed, fullSpeed, currentTangentialSpeed);
+
+        return releaseShiftSpeedBoost * speedAmount;
     }
 
     private void SetAnimatorBool(string parameterName, bool value)
