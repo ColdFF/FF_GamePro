@@ -1112,19 +1112,13 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
         );
 
         Vector3 delta = nextAnchor - previousAnchor;
-        float minCarryDistance = Mathf.Max(0.005f, minCarryDistancePerStep);
 
-        if (delta.sqrMagnitude < minCarryDistance * minCarryDistance)
+        if (delta.sqrMagnitude < 0.00000001f)
         {
             return;
         }
 
-        if (delta.magnitude > maxCarryDistancePerStep)
-        {
-            delta = delta.normalized * maxCarryDistancePerStep;
-        }
-
-        playerRigidbody.MovePosition(playerRigidbody.position + delta);
+        playerController.ApplyShadowCarry(delta);
     }
 
     /// <summary>
@@ -1233,7 +1227,7 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
             Vector2 closest = Vector2.Lerp(start, end, amount);
             float distance = Vector2.Distance(footPoint, closest);
 
-            if (distance <= passengerContactTolerance && distance < bestDistance)
+            if (distance < bestDistance)
             {
                 bestDistance = distance;
                 supportEdge = edge;

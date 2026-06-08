@@ -193,6 +193,7 @@ MonoBehaviour:
   jumpBufferTime: 0.12
   coyoteTime: 0.1
   postJumpGroundLockTime: 0.12
+  externalLaunchAirControlDelay: 0.22
   playerAudioSource: {fileID: 6659095}
   jumpSound: {fileID: 8300000, guid: 183523472d19c994d84775ea48ba6765, type: 3}
   jumpSoundVolume: 0.7
@@ -859,6 +860,7 @@ MonoBehaviour:
   curvedTopEnvelopeTolerance: 0.06
   curvedTopSupportMinSourceNormalY: 0.25
   buildAllEdgesForDebug: 1
+  walkableEdgesMustBeUpperEnvelope: 0
   flipWalkableNormal: 0
   useOppositeNormalFallback: 1
   rebuildEveryFrame: 1
@@ -870,10 +872,12 @@ MonoBehaviour:
   playerTag: Player
   passengerContactTolerance: 0.3
   maxPassengerUpwardSpeed: 1
+  minCarryDistancePerStep: 0.005
   maxCarryDistancePerStep: 0.18
   maxEdgeMatchDistance: 0.8
+  minCarryEdgeDirectionDot: 0.75
   minEdgeDirectionDot: 0.35
-  showDebugSurface: 1
+  showDebugSurface: 0
   debugMaterial: {fileID: 2100000, guid: 5e9e400ae7aeba84abb584feb6311913, type: 2}
   lastProjectedPointCount: 0
   lastHullPointCount: 0
@@ -1304,6 +1308,7 @@ MonoBehaviour:
   curvedTopEnvelopeTolerance: 0.06
   curvedTopSupportMinSourceNormalY: 0.25
   buildAllEdgesForDebug: 1
+  walkableEdgesMustBeUpperEnvelope: 0
   flipWalkableNormal: 0
   useOppositeNormalFallback: 1
   rebuildEveryFrame: 1
@@ -1315,10 +1320,12 @@ MonoBehaviour:
   playerTag: Player
   passengerContactTolerance: 0.3
   maxPassengerUpwardSpeed: 1
+  minCarryDistancePerStep: 0.005
   maxCarryDistancePerStep: 0.18
   maxEdgeMatchDistance: 0.8
+  minCarryEdgeDirectionDot: 0.75
   minEdgeDirectionDot: 0.35
-  showDebugSurface: 1
+  showDebugSurface: 0
   debugMaterial: {fileID: 2100000, guid: 5e9e400ae7aeba84abb584feb6311913, type: 2}
   lastProjectedPointCount: 0
   lastHullPointCount: 0
@@ -1493,6 +1500,7 @@ MonoBehaviour:
   curvedTopEnvelopeTolerance: 0.06
   curvedTopSupportMinSourceNormalY: 0.25
   buildAllEdgesForDebug: 1
+  walkableEdgesMustBeUpperEnvelope: 0
   flipWalkableNormal: 0
   useOppositeNormalFallback: 1
   rebuildEveryFrame: 1
@@ -1504,10 +1512,12 @@ MonoBehaviour:
   playerTag: Player
   passengerContactTolerance: 0.3
   maxPassengerUpwardSpeed: 1
+  minCarryDistancePerStep: 0.005
   maxCarryDistancePerStep: 0.18
   maxEdgeMatchDistance: 0.8
+  minCarryEdgeDirectionDot: 0.75
   minEdgeDirectionDot: 0.35
-  showDebugSurface: 1
+  showDebugSurface: 0
   debugMaterial: {fileID: 2100000, guid: 5e9e400ae7aeba84abb584feb6311913, type: 2}
   lastProjectedPointCount: 0
   lastHullPointCount: 0
@@ -1822,6 +1832,7 @@ MonoBehaviour:
   curvedTopEnvelopeTolerance: 0.06
   curvedTopSupportMinSourceNormalY: 0.25
   buildAllEdgesForDebug: 1
+  walkableEdgesMustBeUpperEnvelope: 0
   flipWalkableNormal: 0
   useOppositeNormalFallback: 1
   rebuildEveryFrame: 1
@@ -1833,10 +1844,12 @@ MonoBehaviour:
   playerTag: Player
   passengerContactTolerance: 0.3
   maxPassengerUpwardSpeed: 1
+  minCarryDistancePerStep: 0.005
   maxCarryDistancePerStep: 0.18
   maxEdgeMatchDistance: 0.8
+  minCarryEdgeDirectionDot: 0.75
   minEdgeDirectionDot: 0.35
-  showDebugSurface: 1
+  showDebugSurface: 0
   debugMaterial: {fileID: 2100000, guid: 5e9e400ae7aeba84abb584feb6311913, type: 2}
   lastProjectedPointCount: 0
   lastHullPointCount: 0
@@ -2600,13 +2613,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 498152223}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.40323338, y: -0.05819604, z: -0.21718867, w: 0.88704294}
-  m_LocalPosition: {x: -5.97, y: -4.03, z: -0.46}
+  m_LocalRotation: {x: 0.40297478, y: -0.05996169, z: -0.22107193, w: 0.88608307}
+  m_LocalPosition: {x: -6.51, y: -4.12, z: -0.46}
   m_LocalScale: {x: 3, y: 0.5, z: 0.5}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 549224732}
-  m_LocalEulerAnglesHint: {x: 43.637, y: -22.624, z: -36.673}
+  m_LocalEulerAnglesHint: {x: 43.443, y: -23.063, z: -37.311}
 --- !u!65 &498152225
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -2706,7 +2719,7 @@ Transform:
   m_GameObject: {fileID: 547553851}
   serializedVersion: 2
   m_LocalRotation: {x: 0.31499514, y: -0.8794054, z: 0.32100692, w: 0.15613735}
-  m_LocalPosition: {x: -2.13, y: -6.39, z: -0.6}
+  m_LocalPosition: {x: -2.45, y: -6.41, z: -0.6}
   m_LocalScale: {x: 1.2, y: 0.5, z: 0.5}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -3106,6 +3119,7 @@ MonoBehaviour:
   curvedTopEnvelopeTolerance: 0.06
   curvedTopSupportMinSourceNormalY: 0.25
   buildAllEdgesForDebug: 1
+  walkableEdgesMustBeUpperEnvelope: 0
   flipWalkableNormal: 0
   useOppositeNormalFallback: 1
   rebuildEveryFrame: 1
@@ -3117,10 +3131,12 @@ MonoBehaviour:
   playerTag: Player
   passengerContactTolerance: 0.3
   maxPassengerUpwardSpeed: 1
+  minCarryDistancePerStep: 0.005
   maxCarryDistancePerStep: 0.18
   maxEdgeMatchDistance: 0.8
+  minCarryEdgeDirectionDot: 0.75
   minEdgeDirectionDot: 0.35
-  showDebugSurface: 1
+  showDebugSurface: 0
   debugMaterial: {fileID: 2100000, guid: 5e9e400ae7aeba84abb584feb6311913, type: 2}
   lastProjectedPointCount: 0
   lastHullPointCount: 0
@@ -3198,6 +3214,7 @@ MonoBehaviour:
   curvedTopEnvelopeTolerance: 0.06
   curvedTopSupportMinSourceNormalY: 0.25
   buildAllEdgesForDebug: 1
+  walkableEdgesMustBeUpperEnvelope: 0
   flipWalkableNormal: 0
   useOppositeNormalFallback: 1
   rebuildEveryFrame: 1
@@ -3209,10 +3226,12 @@ MonoBehaviour:
   playerTag: Player
   passengerContactTolerance: 0.3
   maxPassengerUpwardSpeed: 1
+  minCarryDistancePerStep: 0.005
   maxCarryDistancePerStep: 0.18
   maxEdgeMatchDistance: 0.8
+  minCarryEdgeDirectionDot: 0.75
   minEdgeDirectionDot: 0.35
-  showDebugSurface: 1
+  showDebugSurface: 0
   debugMaterial: {fileID: 2100000, guid: 5e9e400ae7aeba84abb584feb6311913, type: 2}
   lastProjectedPointCount: 0
   lastHullPointCount: 0
@@ -3707,7 +3726,7 @@ Transform:
   m_GameObject: {fileID: 707724970}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.39, y: 2.82, z: 0}
+  m_LocalPosition: {x: 0.39, y: 2.96, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -3776,6 +3795,7 @@ MonoBehaviour:
   curvedTopEnvelopeTolerance: 0.06
   curvedTopSupportMinSourceNormalY: 0.25
   buildAllEdgesForDebug: 1
+  walkableEdgesMustBeUpperEnvelope: 0
   flipWalkableNormal: 0
   useOppositeNormalFallback: 1
   rebuildEveryFrame: 1
@@ -3787,10 +3807,12 @@ MonoBehaviour:
   playerTag: Player
   passengerContactTolerance: 0.3
   maxPassengerUpwardSpeed: 1
+  minCarryDistancePerStep: 0.005
   maxCarryDistancePerStep: 0.18
   maxEdgeMatchDistance: 0.8
+  minCarryEdgeDirectionDot: 0.75
   minEdgeDirectionDot: 0.35
-  showDebugSurface: 1
+  showDebugSurface: 0
   debugMaterial: {fileID: 2100000, guid: 5e9e400ae7aeba84abb584feb6311913, type: 2}
   lastProjectedPointCount: 0
   lastHullPointCount: 0
@@ -4312,6 +4334,7 @@ MonoBehaviour:
   curvedTopEnvelopeTolerance: 0.06
   curvedTopSupportMinSourceNormalY: 0.25
   buildAllEdgesForDebug: 1
+  walkableEdgesMustBeUpperEnvelope: 0
   flipWalkableNormal: 0
   useOppositeNormalFallback: 1
   rebuildEveryFrame: 1
@@ -4323,10 +4346,12 @@ MonoBehaviour:
   playerTag: Player
   passengerContactTolerance: 0.3
   maxPassengerUpwardSpeed: 1
+  minCarryDistancePerStep: 0.005
   maxCarryDistancePerStep: 0.18
   maxEdgeMatchDistance: 0.8
+  minCarryEdgeDirectionDot: 0.75
   minEdgeDirectionDot: 0.35
-  showDebugSurface: 1
+  showDebugSurface: 0
   debugMaterial: {fileID: 2100000, guid: 5e9e400ae7aeba84abb584feb6311913, type: 2}
   lastProjectedPointCount: 0
   lastHullPointCount: 0
@@ -4458,7 +4483,7 @@ Transform:
   m_GameObject: {fileID: 874763435}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.82, y: 3.34, z: 0}
+  m_LocalPosition: {x: -0.71, y: 3.34, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -5107,6 +5132,9 @@ MonoBehaviour:
   overviewPosition: {x: 8.9, y: 2.7, z: -10}
   overviewSize: 8
   overviewHoldTime: 1.2
+  useSeparateEndOverviewShot: 0
+  endOverviewPosition: {x: 8.5, y: 3.9, z: -10}
+  endOverviewSize: 7
   followOffset: {x: 2.5, y: 0.9, z: -10}
   followSize: 4.8
   zoomDuration: 1.2
@@ -5451,6 +5479,7 @@ MonoBehaviour:
   curvedTopEnvelopeTolerance: 0.06
   curvedTopSupportMinSourceNormalY: 0.25
   buildAllEdgesForDebug: 1
+  walkableEdgesMustBeUpperEnvelope: 0
   flipWalkableNormal: 0
   useOppositeNormalFallback: 1
   rebuildEveryFrame: 1
@@ -5462,10 +5491,12 @@ MonoBehaviour:
   playerTag: Player
   passengerContactTolerance: 0.3
   maxPassengerUpwardSpeed: 1
+  minCarryDistancePerStep: 0.005
   maxCarryDistancePerStep: 0.18
   maxEdgeMatchDistance: 0.8
+  minCarryEdgeDirectionDot: 0.75
   minEdgeDirectionDot: 0.35
-  showDebugSurface: 1
+  showDebugSurface: 0
   debugMaterial: {fileID: 2100000, guid: 5e9e400ae7aeba84abb584feb6311913, type: 2}
   lastProjectedPointCount: 0
   lastHullPointCount: 0
@@ -6120,7 +6151,7 @@ Transform:
   m_GameObject: {fileID: 1106107590}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0.05019729, w: 0.9987393}
-  m_LocalPosition: {x: -10.949999, y: 8.4, z: 0}
+  m_LocalPosition: {x: -10.78, y: 8.47, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -6589,6 +6620,7 @@ MonoBehaviour:
   curvedTopEnvelopeTolerance: 0.06
   curvedTopSupportMinSourceNormalY: 0.25
   buildAllEdgesForDebug: 1
+  walkableEdgesMustBeUpperEnvelope: 0
   flipWalkableNormal: 0
   useOppositeNormalFallback: 1
   rebuildEveryFrame: 1
@@ -6600,10 +6632,12 @@ MonoBehaviour:
   playerTag: Player
   passengerContactTolerance: 0.3
   maxPassengerUpwardSpeed: 1
+  minCarryDistancePerStep: 0.005
   maxCarryDistancePerStep: 0.18
   maxEdgeMatchDistance: 0.8
+  minCarryEdgeDirectionDot: 0.75
   minEdgeDirectionDot: 0.35
-  showDebugSurface: 1
+  showDebugSurface: 0
   debugMaterial: {fileID: 2100000, guid: 5e9e400ae7aeba84abb584feb6311913, type: 2}
   lastProjectedPointCount: 0
   lastHullPointCount: 0
@@ -6895,6 +6929,7 @@ MonoBehaviour:
   curvedTopEnvelopeTolerance: 0.06
   curvedTopSupportMinSourceNormalY: 0.25
   buildAllEdgesForDebug: 1
+  walkableEdgesMustBeUpperEnvelope: 0
   flipWalkableNormal: 0
   useOppositeNormalFallback: 1
   rebuildEveryFrame: 1
@@ -6906,10 +6941,12 @@ MonoBehaviour:
   playerTag: Player
   passengerContactTolerance: 0.3
   maxPassengerUpwardSpeed: 1
+  minCarryDistancePerStep: 0.005
   maxCarryDistancePerStep: 0.18
   maxEdgeMatchDistance: 0.8
+  minCarryEdgeDirectionDot: 0.75
   minEdgeDirectionDot: 0.35
-  showDebugSurface: 1
+  showDebugSurface: 0
   debugMaterial: {fileID: 2100000, guid: 5e9e400ae7aeba84abb584feb6311913, type: 2}
   lastProjectedPointCount: 0
   lastHullPointCount: 0
@@ -7214,6 +7251,7 @@ MonoBehaviour:
   curvedTopEnvelopeTolerance: 0.06
   curvedTopSupportMinSourceNormalY: 0.25
   buildAllEdgesForDebug: 1
+  walkableEdgesMustBeUpperEnvelope: 0
   flipWalkableNormal: 0
   useOppositeNormalFallback: 1
   rebuildEveryFrame: 1
@@ -7225,10 +7263,12 @@ MonoBehaviour:
   playerTag: Player
   passengerContactTolerance: 0.3
   maxPassengerUpwardSpeed: 1
+  minCarryDistancePerStep: 0.005
   maxCarryDistancePerStep: 0.18
   maxEdgeMatchDistance: 0.8
+  minCarryEdgeDirectionDot: 0.75
   minEdgeDirectionDot: 0.35
-  showDebugSurface: 1
+  showDebugSurface: 0
   debugMaterial: {fileID: 2100000, guid: 5e9e400ae7aeba84abb584feb6311913, type: 2}
   lastProjectedPointCount: 0
   lastHullPointCount: 0
@@ -8280,6 +8320,7 @@ MonoBehaviour:
   curvedTopEnvelopeTolerance: 0.06
   curvedTopSupportMinSourceNormalY: 0.25
   buildAllEdgesForDebug: 1
+  walkableEdgesMustBeUpperEnvelope: 0
   flipWalkableNormal: 0
   useOppositeNormalFallback: 1
   rebuildEveryFrame: 1
@@ -8291,10 +8332,12 @@ MonoBehaviour:
   playerTag: Player
   passengerContactTolerance: 0.3
   maxPassengerUpwardSpeed: 1
+  minCarryDistancePerStep: 0.005
   maxCarryDistancePerStep: 0.18
   maxEdgeMatchDistance: 0.8
+  minCarryEdgeDirectionDot: 0.75
   minEdgeDirectionDot: 0.35
-  showDebugSurface: 1
+  showDebugSurface: 0
   debugMaterial: {fileID: 2100000, guid: 5e9e400ae7aeba84abb584feb6311913, type: 2}
   lastProjectedPointCount: 0
   lastHullPointCount: 0
@@ -9155,6 +9198,7 @@ MonoBehaviour:
   curvedTopEnvelopeTolerance: 0.06
   curvedTopSupportMinSourceNormalY: 0.25
   buildAllEdgesForDebug: 1
+  walkableEdgesMustBeUpperEnvelope: 0
   flipWalkableNormal: 0
   useOppositeNormalFallback: 1
   rebuildEveryFrame: 1
@@ -9166,10 +9210,12 @@ MonoBehaviour:
   playerTag: Player
   passengerContactTolerance: 0.3
   maxPassengerUpwardSpeed: 1
+  minCarryDistancePerStep: 0.005
   maxCarryDistancePerStep: 0.18
   maxEdgeMatchDistance: 0.8
+  minCarryEdgeDirectionDot: 0.75
   minEdgeDirectionDot: 0.35
-  showDebugSurface: 1
+  showDebugSurface: 0
   debugMaterial: {fileID: 2100000, guid: 5e9e400ae7aeba84abb584feb6311913, type: 2}
   lastProjectedPointCount: 0
   lastHullPointCount: 0
@@ -9204,7 +9250,7 @@ Transform:
   m_GameObject: {fileID: 1672256645}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -9.33, y: 8.3, z: 0}
+  m_LocalPosition: {x: -9.22, y: 8.33, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -9273,6 +9319,7 @@ MonoBehaviour:
   curvedTopEnvelopeTolerance: 0.06
   curvedTopSupportMinSourceNormalY: 0.25
   buildAllEdgesForDebug: 1
+  walkableEdgesMustBeUpperEnvelope: 0
   flipWalkableNormal: 0
   useOppositeNormalFallback: 1
   rebuildEveryFrame: 1
@@ -9284,10 +9331,12 @@ MonoBehaviour:
   playerTag: Player
   passengerContactTolerance: 0.3
   maxPassengerUpwardSpeed: 1
+  minCarryDistancePerStep: 0.005
   maxCarryDistancePerStep: 0.18
   maxEdgeMatchDistance: 0.8
+  minCarryEdgeDirectionDot: 0.75
   minEdgeDirectionDot: 0.35
-  showDebugSurface: 1
+  showDebugSurface: 0
   debugMaterial: {fileID: 2100000, guid: 5e9e400ae7aeba84abb584feb6311913, type: 2}
   lastProjectedPointCount: 0
   lastHullPointCount: 0
@@ -9792,6 +9841,170 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1730676553}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1 &1769611549
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1769611554}
+  - component: {fileID: 1769611553}
+  - component: {fileID: 1769611552}
+  - component: {fileID: 1769611551}
+  - component: {fileID: 1769611550}
+  m_Layer: 3
+  m_Name: Light_Platform
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1769611550
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1769611549}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eb9cbee354e7b8543a56f4f724b429c7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  shadowCasterRenderer: {fileID: 1769611552}
+  shadowScreen: {fileID: 0}
+  directionalLight: {fileID: 0}
+  platformThickness: 0.04
+  platformDepth: 8
+  edgePadding: 0.02
+  surfaceOffset: -0.02
+  minEdgeLength: 0.001
+  minWalkableNormalY: 0.65
+  addCurvedCasterSamples: 1
+  curvedCasterSampleCount: 48
+  curvedCasterRadiusTolerance: 0.18
+  curvedEdgeExtraPadding: 0.02
+  addCurvedTopSupport: 1
+  curvedTopSupportThickness: 0.04
+  curvedTopSupportPadding: 0.035
+  curvedTopEnvelopeTolerance: 0.06
+  curvedTopSupportMinSourceNormalY: 0.25
+  buildAllEdgesForDebug: 1
+  walkableEdgesMustBeUpperEnvelope: 0
+  flipWalkableNormal: 0
+  useOppositeNormalFallback: 1
+  rebuildEveryFrame: 1
+  groundLayerName: Ground
+  addKinematicRigidbody: 1
+  platformPhysicsMaterial: {fileID: 0}
+  steepEdgePhysicsMaterial: {fileID: 0}
+  carryPlayerWithShadow: 1
+  playerTag: Player
+  passengerContactTolerance: 0.35
+  maxPassengerUpwardSpeed: 1
+  minCarryDistancePerStep: 0.005
+  maxCarryDistancePerStep: 0.25
+  maxEdgeMatchDistance: 1.2
+  minCarryEdgeDirectionDot: 0.75
+  minEdgeDirectionDot: 0
+  showDebugSurface: 0
+  debugMaterial: {fileID: 2100000, guid: 5e9e400ae7aeba84abb584feb6311913, type: 2}
+  lastProjectedPointCount: 0
+  lastHullPointCount: 0
+  lastGeneratedEdgeCount: 0
+  lastWalkableEdgeCount: 0
+  lastSteepEdgeCount: 0
+  lastCurvedSamplePointCount: 0
+  lastCurvedTopSupportEdgeCount: 0
+  lastBuildMessage: 
+--- !u!65 &1769611551
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1769611549}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!23 &1769611552
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1769611549}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 48fd2fa06bae97440af9d09c331403af, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!33 &1769611553
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1769611549}
+  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!4 &1769611554
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1769611549}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0.5883949, y: 0.4123509, z: -0.5778831, w: -0.38705218}
+  m_LocalPosition: {x: -4.14, y: -6.72, z: -2.7800002}
+  m_LocalScale: {x: 0.099999994, y: 0.099999994, z: 2}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 1.209, y: -91.862, z: -248.876}
 --- !u!1 &1795388428
 GameObject:
   m_ObjectHideFlags: 0
@@ -9855,6 +10068,7 @@ MonoBehaviour:
   curvedTopEnvelopeTolerance: 0.06
   curvedTopSupportMinSourceNormalY: 0.25
   buildAllEdgesForDebug: 1
+  walkableEdgesMustBeUpperEnvelope: 0
   flipWalkableNormal: 0
   useOppositeNormalFallback: 1
   rebuildEveryFrame: 1
@@ -9866,10 +10080,12 @@ MonoBehaviour:
   playerTag: Player
   passengerContactTolerance: 0.3
   maxPassengerUpwardSpeed: 1
+  minCarryDistancePerStep: 0.005
   maxCarryDistancePerStep: 0.18
   maxEdgeMatchDistance: 0.8
+  minCarryEdgeDirectionDot: 0.75
   minEdgeDirectionDot: 0.35
-  showDebugSurface: 1
+  showDebugSurface: 0
   debugMaterial: {fileID: 2100000, guid: 5e9e400ae7aeba84abb584feb6311913, type: 2}
   lastProjectedPointCount: 0
   lastHullPointCount: 0
@@ -10772,6 +10988,7 @@ MonoBehaviour:
   curvedTopEnvelopeTolerance: 0.06
   curvedTopSupportMinSourceNormalY: 0.25
   buildAllEdgesForDebug: 1
+  walkableEdgesMustBeUpperEnvelope: 0
   flipWalkableNormal: 0
   useOppositeNormalFallback: 1
   rebuildEveryFrame: 1
@@ -10783,10 +11000,12 @@ MonoBehaviour:
   playerTag: Player
   passengerContactTolerance: 0.3
   maxPassengerUpwardSpeed: 1
+  minCarryDistancePerStep: 0.005
   maxCarryDistancePerStep: 0.18
   maxEdgeMatchDistance: 0.8
+  minCarryEdgeDirectionDot: 0.75
   minEdgeDirectionDot: 0.35
-  showDebugSurface: 1
+  showDebugSurface: 0
   debugMaterial: {fileID: 2100000, guid: 5e9e400ae7aeba84abb584feb6311913, type: 2}
   lastProjectedPointCount: 0
   lastHullPointCount: 0
@@ -10843,14 +11062,14 @@ MonoBehaviour:
   shadowCasterRenderer: {fileID: 438353429}
   shadowScreen: {fileID: 879567802}
   directionalLight: {fileID: 705507994}
-  platformThickness: 0.01
+  platformThickness: 0.04
   platformDepth: 8
   edgePadding: 0.004
   surfaceOffset: -0.03
   minEdgeLength: 0.001
   minWalkableNormalY: 0.75
   addCurvedCasterSamples: 1
-  curvedCasterSampleCount: 48
+  curvedCasterSampleCount: 60
   curvedCasterRadiusTolerance: 0.18
   curvedEdgeExtraPadding: 0.02
   addCurvedTopSupport: 1
@@ -10859,6 +11078,7 @@ MonoBehaviour:
   curvedTopEnvelopeTolerance: 0.06
   curvedTopSupportMinSourceNormalY: 0.25
   buildAllEdgesForDebug: 1
+  walkableEdgesMustBeUpperEnvelope: 0
   flipWalkableNormal: 0
   useOppositeNormalFallback: 1
   rebuildEveryFrame: 1
@@ -10870,10 +11090,12 @@ MonoBehaviour:
   playerTag: Player
   passengerContactTolerance: 0.3
   maxPassengerUpwardSpeed: 1
-  maxCarryDistancePerStep: 0.18
-  maxEdgeMatchDistance: 0.8
+  minCarryDistancePerStep: 0.005
+  maxCarryDistancePerStep: 0.05
+  maxEdgeMatchDistance: 0.3
+  minCarryEdgeDirectionDot: 0.75
   minEdgeDirectionDot: 0.35
-  showDebugSurface: 1
+  showDebugSurface: 0
   debugMaterial: {fileID: 2100000, guid: 5e9e400ae7aeba84abb584feb6311913, type: 2}
   lastProjectedPointCount: 0
   lastHullPointCount: 0
@@ -10946,6 +11168,7 @@ MonoBehaviour:
   curvedTopEnvelopeTolerance: 0.06
   curvedTopSupportMinSourceNormalY: 0.25
   buildAllEdgesForDebug: 1
+  walkableEdgesMustBeUpperEnvelope: 0
   flipWalkableNormal: 0
   useOppositeNormalFallback: 1
   rebuildEveryFrame: 1
@@ -10957,10 +11180,12 @@ MonoBehaviour:
   playerTag: Player
   passengerContactTolerance: 0.3
   maxPassengerUpwardSpeed: 1
+  minCarryDistancePerStep: 0.005
   maxCarryDistancePerStep: 0.18
   maxEdgeMatchDistance: 0.8
+  minCarryEdgeDirectionDot: 0.75
   minEdgeDirectionDot: 0.35
-  showDebugSurface: 1
+  showDebugSurface: 0
   debugMaterial: {fileID: 2100000, guid: 5e9e400ae7aeba84abb584feb6311913, type: 2}
   lastProjectedPointCount: 0
   lastHullPointCount: 0
@@ -11119,6 +11344,7 @@ MonoBehaviour:
   curvedTopEnvelopeTolerance: 0.06
   curvedTopSupportMinSourceNormalY: 0.25
   buildAllEdgesForDebug: 1
+  walkableEdgesMustBeUpperEnvelope: 0
   flipWalkableNormal: 0
   useOppositeNormalFallback: 1
   rebuildEveryFrame: 1
@@ -11130,10 +11356,12 @@ MonoBehaviour:
   playerTag: Player
   passengerContactTolerance: 0.3
   maxPassengerUpwardSpeed: 1
+  minCarryDistancePerStep: 0.005
   maxCarryDistancePerStep: 0.18
   maxEdgeMatchDistance: 0.8
+  minCarryEdgeDirectionDot: 0.75
   minEdgeDirectionDot: 0.35
-  showDebugSurface: 1
+  showDebugSurface: 0
   debugMaterial: {fileID: 2100000, guid: 5e9e400ae7aeba84abb584feb6311913, type: 2}
   lastProjectedPointCount: 0
   lastHullPointCount: 0
@@ -11804,7 +12032,7 @@ Transform:
   m_GameObject: {fileID: 2113706397}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -9, y: 4.22, z: 0}
+  m_LocalPosition: {x: -8.72, y: 4.22, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -12188,6 +12416,7 @@ MonoBehaviour:
   curvedTopEnvelopeTolerance: 0.06
   curvedTopSupportMinSourceNormalY: 0.25
   buildAllEdgesForDebug: 1
+  walkableEdgesMustBeUpperEnvelope: 0
   flipWalkableNormal: 0
   useOppositeNormalFallback: 1
   rebuildEveryFrame: 1
@@ -12199,10 +12428,12 @@ MonoBehaviour:
   playerTag: Player
   passengerContactTolerance: 0.3
   maxPassengerUpwardSpeed: 1
+  minCarryDistancePerStep: 0.005
   maxCarryDistancePerStep: 0.18
   maxEdgeMatchDistance: 0.8
+  minCarryEdgeDirectionDot: 0.75
   minEdgeDirectionDot: 0.35
-  showDebugSurface: 1
+  showDebugSurface: 0
   debugMaterial: {fileID: 2100000, guid: 5e9e400ae7aeba84abb584feb6311913, type: 2}
   lastProjectedPointCount: 0
   lastHullPointCount: 0
@@ -12226,6 +12457,7 @@ SceneRoots:
   - {fileID: 942432317}
   - {fileID: 1513306265}
   - {fileID: 349762592}
+  - {fileID: 1769611554}
   - {fileID: 1090897269}
   - {fileID: 261016157}
   - {fileID: 1014337296}

@@ -70,6 +70,8 @@ public class PlayerController : MonoBehaviour
     private float postJumpGroundLockCounter;
     private float externalLaunchAirControlCounter;
     private float footstepCounter;
+    private bool shadowCarriedThisFixedStep;
+    private Vector3 shadowCarryDeltaThisFixedStep;
     private Vector3 groundNormal = Vector3.up;
     private Collider currentGroundCollider;
 
@@ -126,6 +128,54 @@ public class PlayerController : MonoBehaviour
     }
 
     /// <summary>
+    /// Purpose: Records that a shadow platform moved the player in this physics step.
+    /// Input: Movement delta from the shadow platform.
+    /// Output: Downward stick force is skipped for this step.
+    /// </summary>
+    public void NotifyShadowCarry(Vector3 delta)
+    {
+        shadowCarriedThisFixedStep = true;
+        shadowCarryDeltaThisFixedStep += delta;
+
+        if (rb == null)
+        {
+            rb = GetComponent<Rigidbody>();
+        }
+
+        if (rb != null && rb.velocity.y < 0f)
+        {
+            Vector3 velocity = rb.velocity;
+            velocity.y = 0f;
+            rb.velocity = velocity;
+        }
+    }
+
+    /// <summary>
+    /// Purpose: Moves the player with a shadow platform right away.
+    /// Input: Movement delta from the shadow platform.
+    /// Output: Player position and physics data match the new shadow position in this step.
+    /// </summary>
+    public void ApplyShadowCarry(Vector3 delta)
+    {
+        NotifyShadowCarry(delta);
+
+        if (rb == null)
+        {
+            rb = GetComponent<Rigidbody>();
+        }
+
+        if (rb == null)
+        {
+            return;
+        }
+
+        Vector3 targetPosition = rb.position + delta;
+        rb.position = targetPosition;
+        transform.position = targetPosition;
+        Physics.SyncTransforms();
+    }
+
+    /// <summary>
     /// Purpose: Applies an external launch velocity and briefly prevents normal air control from overwriting it.
     /// Input: Launch velocity and optional air-control delay.
     /// Output: The player keeps rope or scripted launch momentum even when no horizontal key is held.
@@ -162,9 +212,11 @@ public class PlayerController : MonoBehaviour
         UpdateFootstepAudio();
     }
 
-    // Purpose: Runs physics-based movement and jump logic at a stable timestep.
-    // Input: Stored movement input, stored jump input, Rigidbody state, and ground probe result.
-    // Output: Applies slope-aware movement and reliable jumping to the Rigidbody.
+    /// <summary>
+    /// Purpose: Runs player physics at a stable step.
+    /// Input: Stored input, Rigidbody state, and ground check data.
+    /// Output: Moves the player, handles jump, and clears shadow carry data.
+    /// </summary>
     void FixedUpdate()
     {
         UpdateGroundState();
@@ -172,6 +224,18 @@ public class PlayerController : MonoBehaviour
         ApplyBufferedJump();
         Move();
         UpdateJumpBufferCounter();
+        ResetShadowCarryState();
+    }
+
+    /// <summary>
+    /// Purpose: Clears shadow platform carry data after one physics step.
+    /// Input: None.
+    /// Output: The next physics step starts with no shadow carry data.
+    /// </summary>
+    void ResetShadowCarryState()
+    {
+        shadowCarriedThisFixedStep = false;
+        shadowCarryDeltaThisFixedStep = Vector3.zero;
     }
 
     // Purpose: Reads horizontal movement input from the keyboard.
@@ -465,9 +529,11 @@ public class PlayerController : MonoBehaviour
                groundName.Contains("ProjectedShadow");
     }
 
-    // Purpose: Applies walking and running movement while respecting slopes.
-    // Input: Stored move input, Shift key state, grounded state, and ground normal.
-    // Output: Updates Rigidbody velocity so the player walks along walkable shadow surfaces.
+    /// <summary>
+    /// Purpose: Applies walk and run movement.
+    /// Input: Move input, run key, ground state, and shadow carry data.
+    /// Output: Updates Rigidbody velocity without extra downward stick after shadow carry.
+    /// </summary>
     void Move()
     {
         if (rb == null)
@@ -478,6 +544,7 @@ public class PlayerController : MonoBehaviour
         bool isMoving = moveInput != 0f;
         bool isHoldingShift = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
         bool isRunning = isMoving && isHoldingShift;
+        bool suppressGroundStick = shadowCarriedThisFixedStep;
 
         float currentSpeed = isRunning ? runSpeed : walkSpeed;
         Vector3 velocity = rb.velocity;
@@ -494,7 +561,10 @@ public class PlayerController : MonoBehaviour
 
                 if (velocity.y <= 0f)
                 {
-                    velocity.y -= groundStickVelocity;
+                    if (!suppressGroundStick)
+                    {
+                        velocity.y -= groundStickVelocity;
+                    }
                 }
             }
             else
@@ -503,7 +573,7 @@ public class PlayerController : MonoBehaviour
 
                 if (velocity.y <= 0f)
                 {
-                    velocity.y = -groundStickVelocity;
+                    velocity.y = suppressGroundStick ? 0f : -groundStickVelocity;
                 }
             }
         }

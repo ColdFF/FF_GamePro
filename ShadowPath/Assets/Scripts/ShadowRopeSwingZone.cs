@@ -340,6 +340,23 @@ public class ShadowRopeSwingZone : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Purpose: Releases the player from the rope when an external system changes the rope shadow state.
+    /// Input: Current play-mode attachment state and configured regrab cooldown.
+    /// Output: The player is detached and briefly prevented from instantly regrabbing the same rope.
+    /// </summary>
+    public void ForceDropFromRope()
+    {
+        if (!Application.isPlaying || !playerAttached)
+        {
+            return;
+        }
+
+        FinishSwing(false);
+        autoGrabCooldownTimer = Mathf.Max(autoGrabCooldownTimer, releaseAutoGrabCooldown);
+        blockAutoGrabUntilPlayerLeavesRange = true;
+    }
+
     private void ConfigureCollider()
     {
         grabCollider = GetComponent<BoxCollider>();
