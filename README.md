@@ -8,7 +8,7 @@ This repository contains my Game Programming coursework, including class exercis
 
 The concept draws inspiration from Chinese shadow puppetry, where light, screens, and silhouettes are used to create movement and storytelling. In `ShadowPath`, this visual idea becomes a gameplay mechanic: shadows are not only part of the scene atmosphere, but also form playable routes through the level.
 
-The player controls a stickman character in a side-view platform environment. Unlike a traditional platformer, progression depends on observing shadows cast by 3D objects and adjusting a hidden light direction with the arrow keys. As the light changes, the projected shadows shift shape and position, creating paths, bridging gaps, and supporting spatial puzzle solving.
+The player controls a stickman character in a side-view platform environment. Unlike a traditional platformer, progression depends on observing shadows cast by 3D objects and adjusting a hidden light direction with the arrow keys. As the light changes, the projected shadows shift shape and position, creating paths, bridging gaps, and supporting spatial puzzle solving. Later levels extend this idea with shadow ladders, rope-shadow swinging, moving caster routes, and Level 04 dual-light phase switching.
 
 The intended experience is thoughtful and experimental: observe the scene, adjust the light, test the shadow path, and move carefully toward the level goal.
 
@@ -36,7 +36,8 @@ The active Unity project is stored in `ShadowPath/`. Supporting documentation, i
 | Auto-grab rope shadow | Jump into a rope-shadow grab zone |
 | Release rope while swinging | `Space` |
 | Boost rope swing | Hold `Shift` while swinging |
-| Adjust light direction | Arrow keys |
+| Adjust active light direction | Arrow keys |
+| Switch active light phase in Level 04 | `F` |
 
 ## Repository Structure
 
