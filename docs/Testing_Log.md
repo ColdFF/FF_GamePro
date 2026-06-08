@@ -478,3 +478,50 @@ Each test entry should include:
 | Expected result | The polish commit should include only the intended Level 03 rope, moving shadow platform, shared player/controller, and completion camera changes, without adding unrelated `ProjectSettings`, `Packages`, Level 01 scene, Level 02 scene, terrain, or rope example files. |
 | Actual result | The final staged gameplay commit contained only six intended files: `Rope.cs`, `Level03_RopeTower.unity`, `PlayerController.cs`, `ProjectedShadowAllEdgePlatform.cs`, `ShadowRopeSwingZone.cs`, and `TutorialCameraController.cs`. Whitespace checks passed before committing, and the working tree was clean afterwards. |
 | Status | Pass |
+
+### 2026-06-06 - Level 04 Dual-Light Design Check
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | `Level04_DualLight` route concept and two-light phase structure |
+| Expected result | The level should support two active light phases where switching the light changes the available shadow route without making the player lose track of the intended path. |
+| Actual result | The Level 04 plan was checked around Phase A, Phase B, and shared shadow objects. This gave the level a clear structure for alternating between two lights while still keeping the route readable through repeated shadow-platform, ladder, and rope interactions. |
+| Status | Pass |
+
+### 2026-06-07 - Dual-Light Switching Test
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Switching between Phase A and Phase B lights in `Level04_DualLight` |
+| Expected result | Pressing F should switch the active gameplay light, enable the correct light and screen wash setup, keep the visible lamp rigs understandable, and apply the active light to the relevant shadow systems. |
+| Actual result | `Level04DualLightController` switches between the two light phases, keeps independent light-angle values, applies phase-specific angle limits, and refreshes scene shadow users so the active light drives the current route. |
+| Status | Pass |
+
+### 2026-06-07 - Phase-Bound Shadow Object Test
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Phase-specific shadow platforms, ladders, and rope-shadow zones |
+| Expected result | Objects marked for Phase A should only be usable in Phase A, objects marked for Phase B should only be usable in Phase B, and shared objects should remain usable in both phases. Disabled phase objects should not leave active colliders behind. |
+| Actual result | `Level04LightPhaseBinding` was added and connected to Level 04 shadow users. The controller enables, disables, or rebuilds shadow platforms, ladder zones, and rope swing zones according to the active phase, preventing inactive phase objects from acting as hidden gameplay supports. |
+| Status | Pass |
+
+### 2026-06-07 - Rope Drop on Light Switch Retest
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Player state when switching lights while attached to a rope shadow |
+| Expected result | If the active light changes while the player is attached to a rope, the player should be released cleanly instead of remaining attached to a rope shadow that has changed phase or position. |
+| Actual result | `ShadowRopeSwingZone` now exposes `ForceDropFromRope`, and the Level 04 controller calls it before switching lights. This prevents the player from staying attached to an invalid rope state during a phase change. |
+| Status | Fixed |
+
+### 2026-06-08 - Level 04 Layout and Camera Framing Check
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Final Level 04 layout, start camera view, and completion overview camera view |
+| Expected result | The start view should frame the intended opening area and lower camera props, while the completion view should show the full Level 04 scene including the door, start point, end point, and lower camera props without revealing unnecessary space below their supports. |
+| Actual result | The Level 04 camera framing was calculated and stored in the scene. The start camera covers the intended opening view, and the end overview camera frames the full level area more cleanly for the completion sequence. |
+| Status | Pass |
+
+

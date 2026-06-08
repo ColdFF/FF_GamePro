@@ -129,3 +129,27 @@ Each entry should briefly answer:
 | What was completed? | Polished the later `Level03_RopeTower` rope path after testing repeated rope use, slow rope release, moving rope setups, and the `MovingCaster_07` shadow platform section. Rope grabbing now stays automatic while Space is used only for releasing, release/re-grab behaviour was stabilised, rope release momentum was tuned to avoid sudden extra acceleration from idle or slow swings, moving-parent rope visuals were improved so the rope does not bend unnaturally when attached to a moving block, and the Level 03 completion overview camera was given a separate end-of-level framing. The gameplay changes were committed on the `feature/level03-rope-path-polish` branch. |
 | What will be worked on next? | Update the documentation branch with the Daily Scrum and Testing Log evidence for the Level 03 polish work, then push the gameplay branch and prepare the pull request. After that, continue testing the final Level 03 path for pacing, difficulty, and camera readability before treating the level as final. |
 | Blockers, risks, or problems | The changed systems include shared player movement, camera return behaviour, and generated shadow platform handling, so Level 01 and Level 02 still need quick Play Mode regression checks before merging. Unity scene files can also create large diffs from layout and serialisation changes, so commits should continue to stage only the intended files. |
+
+### 2026-06-06 - Level 04 Dual-Light Route Planning
+
+| Question | Notes |
+| --- | --- |
+| What was completed? | Planned the main direction for `Level04_DualLight`. The level was shaped around switching between two active lights, with some shadow objects belonging to Phase A, some to Phase B, and some remaining usable in both phases. The design goal was to make light switching part of route reading instead of only a visual effect. |
+| What will be worked on next? | Build the first Level 04 blockout, create the dual-light control logic, and decide how phase-specific ladders, ropes, and shadow platforms should be marked in the scene. |
+| Blockers, risks, or problems | A two-light level can easily become confusing if the active phase is not clear. Switching lights also creates a technical risk because shared shadow systems, rope attachment, and ladder climb zones all need to respond cleanly to the active light. |
+
+### 2026-06-07 - Level 04 Dual-Light Implementation and Layout
+
+| Question | Notes |
+| --- | --- |
+| What was completed? | Implemented the Level 04 dual-light setup with a dedicated controller, Phase A and Phase B light references, separate light-angle limits, phase-binding components, and an editor setup utility for wiring the scene. The main Level 04 route was built with phase-specific shadow platforms, ladder sections, rope-shadow sections, and a shared light-platform material. |
+| What will be worked on next? | Finish the final Level 04 layout pass, tune rope lengths and ladder trigger placement, calculate the start and completion camera framing, and prepare the project files for a focused gameplay commit. |
+| Blockers, risks, or problems | Level 04 depends on shared player, shadow-platform, and rope scripts. Any fix for the new level must avoid weakening Level 01, Level 02, or Level 03, so the commit scope needs to be checked carefully before pushing. |
+
+### 2026-06-08 - Level 04 Final Project Commit
+
+| Question | Notes |
+| --- | --- |
+| What was completed? | Completed the final Level 04 layout and camera framing, then prepared the project-side update on the `feature-level04-dual-light` branch. The staged project files were checked against the active Unity project, unused copied assets were excluded, and the gameplay update was pushed for pull request review. |
+| What will be worked on next? | Update the documentation branch so the README, Daily Scrum, and Testing Log match the Level 04 work and the final project commit. After that, the main development focus should move from individual level construction to connecting the four designed scenes into a complete game flow, including a main menu, level selection, and clearer navigation between levels. |
+| Blockers, risks, or problems | The main remaining risk is regression across earlier levels because Level 04 uses shared movement, generated shadow platform, and rope release logic. Manual Unity testing across Level 01 to Level 04 is still recommended before treating the merged version as final. |
