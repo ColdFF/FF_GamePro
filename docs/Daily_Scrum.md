@@ -153,3 +153,19 @@ Each entry should briefly answer:
 | What was completed? | Completed the final Level 04 layout and camera framing, then prepared the project-side update on the `feature-level04-dual-light` branch. The staged project files were checked against the active Unity project, unused copied assets were excluded, and the gameplay update was pushed for pull request review. |
 | What will be worked on next? | Update the documentation branch so the README, Daily Scrum, and Testing Log match the Level 04 work and the final project commit. After that, the main development focus should move from individual level construction to connecting the four designed scenes into a complete game flow, including a main menu, level selection, and clearer navigation between levels. |
 | Blockers, risks, or problems | The main remaining risk is regression across earlier levels because Level 04 uses shared movement, generated shadow platform, and rope release logic. Manual Unity testing across Level 01 to Level 04 is still recommended before treating the merged version as final. |
+
+### 2026-06-09 - Main Menu and Level Flow Planning
+
+| Question | Notes |
+| --- | --- |
+| What was completed? | Planned how the separate `ShadowPath` levels should be connected into a complete playable flow. The work focused on the new main menu direction, scene order, level-to-level transitions, pause menu consistency, and how instruction popups should behave across later levels without interrupting the player too much. |
+| What will be worked on next? | Implement the main menu scene, connect the build scene list, add reusable pause and instruction UI support to the later levels, and check that Level 01 through Level 04 can be reached in the intended order. |
+| Blockers, risks, or problems | The main risk is that menu and transition work touches several scenes at once, which can create large Unity scene diffs. The update needs careful commit staging so unrelated Unity-generated files, example assets, or font cache changes are not accidentally included. |
+
+### 2026-06-10 - Menu Flow Project Commit
+
+| Question | Notes |
+| --- | --- |
+| What was completed? | Completed the project-side menu and level-flow update. A new `MainMenu` scene was added, the current playable levels were added to Build Settings, level completion can continue through the chapter transition flow, and each level now has instruction and pause support. The project update was staged carefully and committed on the menu/level-flow feature branch. |
+| What will be worked on next? | Continue refining the menu logic, especially checking navigation behaviour, button feedback, return-to-menu flow, and whether the level sequence feels clear when played from the start. Documentation should also be updated for the new menu flow, testing notes, and UI font usage. |
+| Blockers, risks, or problems | The feature touches all playable scenes, so regression testing across Level 01 to Level 04 is still important. The remaining local Unity-generated changes should stay out of the documentation commit unless they are reviewed and proven necessary. |

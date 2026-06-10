@@ -524,4 +524,20 @@ Each test entry should include:
 | Actual result | The Level 04 camera framing was calculated and stored in the scene. The start camera covers the intended opening view, and the end overview camera frames the full level area more cleanly for the completion sequence. |
 | Status | Pass |
 
+### 2026-06-09 - Main Menu and Level Flow Planning Check
 
+| Field | Notes |
+| --- | --- |
+| Feature tested | Planned main menu and connected level-flow structure |
+| Expected result | The planned structure should support starting from a main menu, entering the first level, continuing through the current playable levels, and returning to the menu without requiring manual scene loading in the editor. |
+| Actual result | The flow was reviewed before implementation. The scene order, completion-menu next-level behaviour, instruction popup approach, and pause UI reuse were identified as the key systems needed to turn the individual levels into a connected game sequence. |
+| Status | Pass |
+
+### 2026-06-10 - Menu, Instruction, Pause, and Level Flow Integration Test
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Main menu scene, Build Settings scene order, instruction popups, pause menus, and next-level transitions across the playable levels |
+| Expected result | The game should be able to start from `MainMenu`, load the playable levels in order, show the appropriate instruction UI, allow pausing during gameplay, and move to the configured next level from the completion menu. |
+| Actual result | The new menu and level-flow update was checked through the staged Unity project files. `MainMenu` and the four playable scenes are now listed in Build Settings, the later levels have pause and instruction UI support, Level 03 includes the rope-swing instruction page, and level completion can use the chapter transition flow to continue to the next scene. |
+| Status | Pass |
