@@ -42,6 +42,7 @@ public class LevelEndBlackoutController : MonoBehaviour
     public string mainMenuButtonLabel = "Main Menu";
     public string nextLevelSceneName = "";
     public string mainMenuSceneName = "MainMenu";
+    public bool useChapterTransitionForNextLevel = true;
     public UnityEvent onRestartSelected;
     public UnityEvent onNextLevelSelected;
     public UnityEvent onMainMenuSelected;
@@ -265,7 +266,7 @@ public class LevelEndBlackoutController : MonoBehaviour
 
         blackoutCanvas = canvasObject.AddComponent<Canvas>();
         blackoutCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        blackoutCanvas.sortingOrder = 32767;
+        blackoutCanvas.sortingOrder = 30000;
         canvasObject.AddComponent<GraphicRaycaster>();
 
         CanvasGroup canvasGroup = canvasObject.AddComponent<CanvasGroup>();
@@ -305,7 +306,7 @@ public class LevelEndBlackoutController : MonoBehaviour
     /// <summary>
     /// Purpose: Creates the runtime success menu when needed.
     /// Input: Blackout canvas.
-    /// Output: Menu hierarchy with title, Restart, Next Level, and Main Menu buttons.
+    /// Output: Menu hierarchy with title, Restart, optional Next Level, and Main Menu buttons.
     /// </summary>
     void EnsureSuccessMenu()
     {
@@ -345,7 +346,10 @@ public class LevelEndBlackoutController : MonoBehaviour
 
         CreateTitle(successMenuObject.transform);
         CreateButton(successMenuObject.transform, restartButtonLabel, RestartCurrentLevel);
-        CreateButton(successMenuObject.transform, nextLevelButtonLabel, GoToNextLevel);
+        if (!string.IsNullOrWhiteSpace(nextLevelSceneName))
+        {
+            CreateButton(successMenuObject.transform, nextLevelButtonLabel, GoToNextLevel);
+        }
         CreateButton(successMenuObject.transform, mainMenuButtonLabel, GoToMainMenu);
 
         successMenuObject.SetActive(false);
@@ -455,21 +459,31 @@ public class LevelEndBlackoutController : MonoBehaviour
 
     /// <summary>
     /// Purpose: Handles Next Level button clicks.
-    /// Input: Button click, optional UnityEvent listeners, and optional scene name.
-    /// Output: Loads configured next level scene when available.
+    /// Input: Button click, optional UnityEvent listeners, and the configured next level scene name.
+    /// Output: Loads the next level directly or through the educational chapter transition.
     /// </summary>
     public void GoToNextLevel()
     {
         onNextLevelSelected?.Invoke();
 
-        if (string.IsNullOrWhiteSpace(nextLevelSceneName))
+        string targetSceneName = nextLevelSceneName;
+
+        if (string.IsNullOrWhiteSpace(targetSceneName))
         {
-            Debug.Log("Next Level selected. Set nextLevelSceneName when the next scene exists.", this);
+            Debug.LogWarning("Next Level selected, but nextLevelSceneName is empty. Set it on this LevelEndBlackoutController.", this);
             return;
         }
 
         Time.timeScale = 1f;
-        SceneManager.LoadScene(nextLevelSceneName);
+
+        if (useChapterTransitionForNextLevel)
+        {
+            ChapterTransitionManager.LoadSceneWithChapter(targetSceneName);
+        }
+        else
+        {
+            SceneManager.LoadScene(targetSceneName);
+        }
     }
 
     /// <summary>

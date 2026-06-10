@@ -4,5 +4,20 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
+  m_Scenes:
+  - enabled: 1
+    path: Assets/Scenes/MainMenu.unity
+    guid: d55e1266d4deb9049bd19881f41f45bd
+  - enabled: 1
+    path: Assets/Scenes/Level01_Tutorial.unity
+    guid: 6945d85c61ed4364bbe01e12fa19e90a
+  - enabled: 1
+    path: Assets/Scenes/Level02_HiddenDoor.unity
+    guid: c5c7f8dfc5c80304396db7dab4a10d47
+  - enabled: 1
+    path: Assets/Scenes/Level03_RopeTower.unity
+    guid: 08ab7c22207e18a499a5df3c82dced0a
+  - enabled: 1
+    path: Assets/Scenes/Level04_DualLight.unity
+    guid: 355e77056def4694993be1a9d3137ffc
   m_configObjects: {}
