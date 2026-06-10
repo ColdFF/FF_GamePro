@@ -38,6 +38,13 @@ public class ShadowLadderClimbZone : MonoBehaviour
     [Range(0f, 1f)] public float climbStartNormalizedTime = 0f;
     public bool pauseClimbAnimationWithoutInput = true;
 
+    [Header("Climb Audio")]
+    public AudioSource climbAudioSource;
+    public AudioClip climbStepSound;
+    [Range(0f, 1f)] public float climbStepVolume = 0.32f;
+    public float climbStepInterval = 0.18f;
+    public float climbStepInputThreshold = 0.05f;
+
     [Header("Input")]
     public KeyCode climbKey = KeyCode.W;
     public KeyCode alternateClimbKey = KeyCode.UpArrow;
@@ -62,6 +69,7 @@ public class ShadowLadderClimbZone : MonoBehaviour
     private float climbAmount;
     private float exitSnapTimer;
     private Vector3 exitSnapStart;
+    private float climbStepCounter;
 
     private void Reset()
     {
@@ -240,6 +248,7 @@ public class ShadowLadderClimbZone : MonoBehaviour
 
         isClimbing = true;
         exitSnapTimer = 0f;
+        climbStepCounter = 0f;
         climbAmount = snapToBottomPoint ? 0f : GetClosestAmountOnLadder(player.position);
 
         if (playerController != null)
@@ -316,6 +325,7 @@ public class ShadowLadderClimbZone : MonoBehaviour
 
         float input = GetClimbInput();
         UpdateClimbAnimationSpeed(input);
+        UpdateClimbAudio(input);
 
         if (input < -0.01f && ShouldDetachAtBottom())
         {
@@ -450,6 +460,7 @@ public class ShadowLadderClimbZone : MonoBehaviour
 
         isClimbing = false;
         playerInside = false;
+        climbStepCounter = 0f;
     }
 
     private void MovePlayerTo(Vector3 worldPosition)
@@ -508,6 +519,50 @@ public class ShadowLadderClimbZone : MonoBehaviour
         }
 
         playerAnimator.speed = Mathf.Abs(climbInput) > 0.01f ? Mathf.Max(0.01f, climbAnimatorSpeed) : 0f;
+    }
+
+    private void UpdateClimbAudio(float climbInput)
+    {
+        if (climbStepSound == null || Mathf.Abs(climbInput) < climbStepInputThreshold)
+        {
+            climbStepCounter = 0f;
+            return;
+        }
+
+        climbStepCounter -= Time.deltaTime;
+
+        if (climbStepCounter > 0f)
+        {
+            return;
+        }
+
+        AudioSource audioSource = GetClimbAudioSource();
+        if (audioSource == null)
+        {
+            return;
+        }
+
+        audioSource.PlayOneShot(climbStepSound, climbStepVolume);
+        climbStepCounter = Mathf.Max(0.03f, climbStepInterval);
+    }
+
+    private AudioSource GetClimbAudioSource()
+    {
+        if (climbAudioSource != null)
+        {
+            return climbAudioSource;
+        }
+
+        if (!Application.isPlaying || climbStepSound == null)
+        {
+            return null;
+        }
+
+        climbAudioSource = gameObject.AddComponent<AudioSource>();
+        climbAudioSource.playOnAwake = false;
+        climbAudioSource.loop = false;
+        climbAudioSource.spatialBlend = 0f;
+        return climbAudioSource;
     }
 
     private bool HasAnimatorBool(string parameterName)

@@ -67,9 +67,6 @@ public class Level04DualLightController : MonoBehaviour
     public bool dropAttachedRopesOnLightSwitch = true;
     public ProjectedShadowAllEdgePlatform[] allEdgePlatforms;
     public ProjectedShadowCollider[] shadowColliders;
-    public ProjectedShadowEdgeWalkway[] edgeWalkways;
-    public ProjectedShadowWalkableEdges[] walkableEdges;
-    public ShadowTopPlatform[] topPlatforms;
     public ShadowLadderClimbZone[] ladderZones;
     public ShadowRopeSwingZone[] ropeSwingZones;
 
@@ -311,9 +308,6 @@ public class Level04DualLightController : MonoBehaviour
 
         allEdgePlatforms = FindObjectsOfType<ProjectedShadowAllEdgePlatform>(true);
         shadowColliders = FindObjectsOfType<ProjectedShadowCollider>(true);
-        edgeWalkways = FindObjectsOfType<ProjectedShadowEdgeWalkway>(true);
-        walkableEdges = FindObjectsOfType<ProjectedShadowWalkableEdges>(true);
-        topPlatforms = FindObjectsOfType<ShadowTopPlatform>(true);
         ladderZones = FindObjectsOfType<ShadowLadderClimbZone>(true);
         ropeSwingZones = FindObjectsOfType<ShadowRopeSwingZone>(true);
     }
@@ -383,53 +377,6 @@ public class Level04DualLightController : MonoBehaviour
             {
                 shadowCollider.RebuildShadowCollider();
             }
-        }
-
-        foreach (ProjectedShadowEdgeWalkway walkway in edgeWalkways)
-        {
-            if (walkway != null)
-            {
-                bool allowed = IsShadowUserAllowed(walkway, activePhase);
-                walkway.directionalLight = allowed ? activeLight : null;
-                SetNamedChildActive(walkway, "GeneratedShadowEdgeStrips", allowed);
-                walkway.enabled = allowed;
-                SetColliderEnabled(walkway, allowed);
-            }
-        }
-
-        foreach (ProjectedShadowWalkableEdges edges in walkableEdges)
-        {
-            if (edges == null)
-            {
-                continue;
-            }
-
-            bool allowed = IsShadowUserAllowed(edges, activePhase);
-            edges.directionalLight = allowed ? activeLight : null;
-
-            if (allowed)
-            {
-                edges.enabled = true;
-                edges.Rebuild();
-            }
-            else
-            {
-                edges.Rebuild();
-                edges.enabled = false;
-            }
-        }
-
-        foreach (ShadowTopPlatform topPlatform in topPlatforms)
-        {
-            if (topPlatform == null)
-            {
-                continue;
-            }
-
-            bool allowed = IsShadowUserAllowed(topPlatform, activePhase);
-            topPlatform.enabled = allowed;
-            topPlatform.directionalLight = allowed ? activeLight : null;
-            topPlatform.UpdateShadowPlatform();
         }
 
         foreach (ShadowLadderClimbZone ladderZone in ladderZones)
@@ -558,22 +505,4 @@ public class Level04DualLightController : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Purpose: Shows or hides a generated child root used by older shadow platform scripts.
-    /// Input: Component that owns the generated child and the child object name.
-    /// Output: The generated child object is active only when its phase is allowed.
-    /// </summary>
-    private void SetNamedChildActive(Component owner, string childName, bool activeState)
-    {
-        if (owner == null || string.IsNullOrEmpty(childName))
-        {
-            return;
-        }
-
-        Transform child = owner.transform.Find(childName);
-        if (child != null)
-        {
-            child.gameObject.SetActive(activeState);
-        }
-    }
 }

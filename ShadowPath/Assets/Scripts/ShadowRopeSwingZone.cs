@@ -111,6 +111,21 @@ public class ShadowRopeSwingZone : MonoBehaviour
     public string climbStateName = "Stickman_Climb";
     public float attachedAnimatorSpeed = 0f;
 
+    [Header("Swing Audio")]
+    public AudioSource swingAudioSource;
+    public AudioClip swingWindSound;
+    [Range(0f, 1f)] public float swingWindMaxVolume = 1f;
+    [Range(0f, 1f)] public float swingWindMinVolume = 0.55f;
+    public float swingWindFullAngle = 45f;
+    public float swingWindFullAngularSpeed = 3.2f;
+    public float swingWindFadeSpeed = 7f;
+    public float swingWindMinPitch = 0.85f;
+    public float swingWindMaxPitch = 1.15f;
+    public float swingWindClipStartTime = 0.52f;
+    public float swingWindClipEndTime = 1.05f;
+    public float swingWindStartThreshold = 0.12f;
+    public float swingWindStopThreshold = 0.06f;
+
     [Header("Read Only Diagnostics")]
     [SerializeField] private bool projectionValid;
     [SerializeField] private bool playerAttached;
@@ -160,6 +175,7 @@ public class ShadowRopeSwingZone : MonoBehaviour
     private Vector3 handTargetVelocity;
     private bool hasPreviousHandTargetPosition;
     private bool hasCurrentHandTargetPosition;
+    private bool swingAudioActive;
     private float lastReleaseDirectionSign = 1f;
     private float lastRawSwingInput;
     private bool lastBoostInputHeld;
@@ -208,6 +224,7 @@ public class ShadowRopeSwingZone : MonoBehaviour
 
         UpdateHandGrabDiagnostics();
         UpdateAutoGrabReleaseBlock();
+        UpdateSwingAudio(Time.deltaTime);
         bool autoGrabAllowed = CanAutoGrab();
 
         if (playerAttached)
@@ -338,6 +355,8 @@ public class ShadowRopeSwingZone : MonoBehaviour
         {
             FinishSwing(false);
         }
+
+        StopSwingAudio();
     }
 
     /// <summary>
@@ -641,6 +660,7 @@ public class ShadowRopeSwingZone : MonoBehaviour
         DriveRopeEndFromSwingAngle();
         UpdateGrabZone();
         MovePlayerHandTo(GetCurrentSwingHandTarget());
+        UpdateSwingAudio(0f);
     }
 
     private void CachePlayer(Collider playerCollider)
@@ -777,6 +797,170 @@ public class ShadowRopeSwingZone : MonoBehaviour
                 UpdateGrabZone();
             }
         }
+    }
+
+    private void UpdateSwingAudio(float deltaTime)
+    {
+        if (!Application.isPlaying || swingWindSound == null || !playerAttached)
+        {
+            StopSwingAudio();
+            return;
+        }
+
+        AudioSource audioSource = GetSwingAudioSource();
+        if (audioSource == null)
+        {
+            return;
+        }
+
+        if (audioSource.clip != swingWindSound)
+        {
+            audioSource.clip = swingWindSound;
+        }
+
+        ConfigureSwingAudioSource(audioSource);
+
+        float angleAmount = Mathf.InverseLerp(4f, Mathf.Max(4.01f, swingWindFullAngle), Mathf.Abs(GetAngleFromRestRadians()) * Mathf.Rad2Deg);
+        float speedAmount = Mathf.InverseLerp(0.15f, Mathf.Max(0.16f, swingWindFullAngularSpeed), Mathf.Abs(angularVelocity));
+        float motionAmount = Mathf.Clamp01(speedAmount * Mathf.Lerp(0.45f, 1f, angleAmount));
+        float startThreshold = Mathf.Clamp01(swingWindStartThreshold);
+        float stopThreshold = Mathf.Min(startThreshold, Mathf.Clamp01(swingWindStopThreshold));
+
+        if (swingAudioActive)
+        {
+            swingAudioActive = motionAmount > stopThreshold;
+        }
+        else
+        {
+            swingAudioActive = motionAmount >= startThreshold;
+        }
+
+        float targetVolume = 0f;
+        if (swingAudioActive)
+        {
+            EnsureSwingAudioPlaying(audioSource);
+            UpdateSwingAudioLoopPoint(audioSource);
+
+            float activeAmount = Mathf.InverseLerp(startThreshold, 1f, motionAmount);
+            float curvedAmount = Mathf.Sqrt(Mathf.Clamp01(activeAmount));
+            float maxVolume = Mathf.Max(swingWindMaxVolume, swingWindMinVolume);
+            targetVolume = Mathf.Lerp(Mathf.Clamp01(swingWindMinVolume), Mathf.Clamp01(maxVolume), curvedAmount);
+        }
+
+        float fade = Mathf.Max(0.01f, swingWindFadeSpeed);
+
+        audioSource.volume = deltaTime > 0f
+            ? Mathf.MoveTowards(audioSource.volume, targetVolume, fade * deltaTime)
+            : targetVolume;
+        audioSource.pitch = Mathf.Lerp(swingWindMinPitch, swingWindMaxPitch, Mathf.Clamp01(motionAmount));
+
+        if (!swingAudioActive && audioSource.isPlaying && audioSource.volume <= 0.001f)
+        {
+            audioSource.Stop();
+        }
+    }
+
+    private void EnsureSwingAudioPlaying(AudioSource audioSource)
+    {
+        if (swingWindSound.loadState == AudioDataLoadState.Unloaded)
+        {
+            swingWindSound.LoadAudioData();
+        }
+
+        float startTime = GetClampedSwingAudioStartTime();
+
+        if (!audioSource.isPlaying)
+        {
+            audioSource.volume = 0f;
+            audioSource.time = startTime;
+            audioSource.Play();
+            return;
+        }
+
+        if (audioSource.time < startTime || audioSource.time >= GetClampedSwingAudioEndTime())
+        {
+            audioSource.time = startTime;
+        }
+    }
+
+    private void UpdateSwingAudioLoopPoint(AudioSource audioSource)
+    {
+        if (!audioSource.isPlaying)
+        {
+            return;
+        }
+
+        float startTime = GetClampedSwingAudioStartTime();
+        float endTime = GetClampedSwingAudioEndTime();
+        if (audioSource.time < startTime || audioSource.time >= endTime)
+        {
+            audioSource.time = startTime;
+        }
+    }
+
+    private float GetClampedSwingAudioStartTime()
+    {
+        if (swingWindSound == null)
+        {
+            return 0f;
+        }
+
+        return Mathf.Clamp(swingWindClipStartTime, 0f, Mathf.Max(0f, swingWindSound.length - 0.05f));
+    }
+
+    private float GetClampedSwingAudioEndTime()
+    {
+        if (swingWindSound == null)
+        {
+            return 0f;
+        }
+
+        float startTime = GetClampedSwingAudioStartTime();
+        return Mathf.Clamp(swingWindClipEndTime, startTime + 0.05f, swingWindSound.length);
+    }
+
+    private AudioSource GetSwingAudioSource()
+    {
+        if (swingAudioSource != null)
+        {
+            return swingAudioSource;
+        }
+
+        if (!Application.isPlaying || swingWindSound == null)
+        {
+            return null;
+        }
+
+        swingAudioSource = gameObject.AddComponent<AudioSource>();
+        ConfigureSwingAudioSource(swingAudioSource);
+        return swingAudioSource;
+    }
+
+    private void ConfigureSwingAudioSource(AudioSource audioSource)
+    {
+        audioSource.playOnAwake = false;
+        audioSource.loop = false;
+        audioSource.mute = false;
+        audioSource.priority = 64;
+        audioSource.spatialBlend = 0f;
+        audioSource.dopplerLevel = 0f;
+        audioSource.ignoreListenerPause = true;
+    }
+
+    private void StopSwingAudio()
+    {
+        if (swingAudioSource == null)
+        {
+            return;
+        }
+
+        if (swingAudioSource.isPlaying)
+        {
+            swingAudioSource.Stop();
+        }
+
+        swingAudioSource.volume = 0f;
+        swingAudioActive = false;
     }
 
     private float GetAngleFromRestRadians()
@@ -1415,6 +1599,7 @@ public class ShadowRopeSwingZone : MonoBehaviour
 
         RestoreSwingPose();
         SetAnimatorBool("isClimbing", false);
+        StopSwingAudio();
 
         playerAttached = false;
         releaseRequested = false;
