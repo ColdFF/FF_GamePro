@@ -13,8 +13,10 @@ public class MainMenuButtonHoverEffect : MonoBehaviour,
     IPointerExitHandler,
     IPointerDownHandler,
     IPointerUpHandler,
+    IPointerClickHandler,
     ISelectHandler,
-    IDeselectHandler
+    IDeselectHandler,
+    ISubmitHandler
 {
     [Header("References")]
     public RectTransform targetTransform;
@@ -38,14 +40,31 @@ public class MainMenuButtonHoverEffect : MonoBehaviour,
     public Color pressedLabelColor = new Color(1f, 0.82f, 0.46f, 1f);
 
     [Header("Selection")]
-    public bool selectOnPointerEnter = true;
-    public bool keepSelectedHighlighted = true;
+    public bool selectOnPointerEnter = false;
+    public bool keepSelectedHighlighted = false;
+    public bool clearSelectionOnPointerExit = true;
+    public bool clearSelectionAfterClick = true;
+
+    [Header("Audio")]
+    public bool playSounds = true;
+    public AudioClip hoverSound;
+    public AudioClip clickSound;
+    [Range(0f, 1f)] public float hoverVolume = 0.28f;
+    [Range(0f, 1f)] public float clickVolume = 0.48f;
+    public string hoverSoundResourcePath = "Audio/UI/MenuHoverSoft";
+    public string clickSoundResourcePath = "Audio/UI/MenuClickConfirm";
 
     private Vector3 baseScale = Vector3.one;
     private Selectable selectable;
     private bool isHovered;
     private bool isPressed;
     private bool isSelected;
+    private bool suppressHoverUntilPointerExit;
+
+    private static AudioSource sharedAudioSource;
+    private static AudioClip sharedHoverSound;
+    private static AudioClip sharedClickSound;
+    private static bool loadedDefaultSounds;
 
     /// <summary>
     /// Purpose: Finds local UI references when they were not assigned manually.
@@ -70,7 +89,22 @@ public class MainMenuButtonHoverEffect : MonoBehaviour,
         isHovered = false;
         isPressed = false;
         isSelected = false;
+        suppressHoverUntilPointerExit = false;
         ApplyVisualsImmediate();
+    }
+
+    /// <summary>
+    /// Purpose: Clears transient interaction state when a menu panel hides the button.
+    /// Input: The button being disabled by menu navigation.
+    /// Output: The button no longer remains selected or pressed while hidden.
+    /// </summary>
+    private void OnDisable()
+    {
+        isHovered = false;
+        isPressed = false;
+        isSelected = false;
+        suppressHoverUntilPointerExit = false;
+        ClearSelectionIfCurrent();
     }
 
     /// <summary>
@@ -108,7 +142,13 @@ public class MainMenuButtonHoverEffect : MonoBehaviour,
     /// </summary>
     public void OnPointerEnter(PointerEventData eventData)
     {
-        isHovered = true;
+        if (ChapterTransitionManager.IsTransitionPlaying)
+        {
+            return;
+        }
+
+        isHovered = !suppressHoverUntilPointerExit;
+        PlayHoverSound();
 
         if (selectOnPointerEnter && EventSystem.current != null)
         {
@@ -125,6 +165,12 @@ public class MainMenuButtonHoverEffect : MonoBehaviour,
     {
         isHovered = false;
         isPressed = false;
+        suppressHoverUntilPointerExit = false;
+
+        if (clearSelectionOnPointerExit)
+        {
+            ClearSelectionIfCurrent();
+        }
     }
 
     /// <summary>
@@ -148,6 +194,26 @@ public class MainMenuButtonHoverEffect : MonoBehaviour,
     }
 
     /// <summary>
+    /// Purpose: Plays a firmer confirm sound and clears the selected visual after a mouse click.
+    /// Input: Unity pointer click event data.
+    /// Output: Click feedback plays once and the button can return to hover or normal visuals.
+    /// </summary>
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        isPressed = false;
+        isHovered = false;
+        suppressHoverUntilPointerExit = true;
+        PlayClickSound();
+
+        if (clearSelectionAfterClick)
+        {
+            ClearSelectionIfCurrent();
+        }
+
+        ApplyVisualsImmediate();
+    }
+
+    /// <summary>
     /// Purpose: Marks the button as selected for keyboard or pointer navigation.
     /// Input: Unity selection event data.
     /// Output: Enables selected highlighting when configured.
@@ -165,6 +231,26 @@ public class MainMenuButtonHoverEffect : MonoBehaviour,
     public void OnDeselect(BaseEventData eventData)
     {
         isSelected = false;
+    }
+
+    /// <summary>
+    /// Purpose: Plays the same confirm feedback for keyboard or controller submit.
+    /// Input: Unity submit event data.
+    /// Output: Click feedback plays and the selected visual is cleared when configured.
+    /// </summary>
+    public void OnSubmit(BaseEventData eventData)
+    {
+        isPressed = false;
+        isHovered = false;
+        suppressHoverUntilPointerExit = true;
+        PlayClickSound();
+
+        if (clearSelectionAfterClick)
+        {
+            ClearSelectionIfCurrent();
+        }
+
+        ApplyVisualsImmediate();
     }
 
     /// <summary>
@@ -315,6 +401,125 @@ public class MainMenuButtonHoverEffect : MonoBehaviour,
     }
 
     /// <summary>
+    /// Purpose: Clears this button from the EventSystem selection when it is the active selected object.
+    /// Input: Current EventSystem selection.
+    /// Output: Unity's selected state no longer holds the button in a highlighted state after pointer interaction.
+    /// </summary>
+    private void ClearSelectionIfCurrent()
+    {
+        if (EventSystem.current != null && EventSystem.current.currentSelectedGameObject == gameObject)
+        {
+            EventSystem.current.SetSelectedGameObject(null);
+        }
+
+        isSelected = false;
+    }
+
+    /// <summary>
+    /// Purpose: Plays the softer hover UI sound.
+    /// Input: Pointer entering a button.
+    /// Output: A short, quiet selection sound is played through a shared 2D UI AudioSource.
+    /// </summary>
+    private void PlayHoverSound()
+    {
+        PlaySound(GetHoverSound(), hoverVolume);
+    }
+
+    /// <summary>
+    /// Purpose: Plays the stronger click UI sound.
+    /// Input: Pointer click or submit interaction.
+    /// Output: A short confirm sound is played through a shared 2D UI AudioSource.
+    /// </summary>
+    private void PlayClickSound()
+    {
+        PlaySound(GetClickSound(), clickVolume, true);
+    }
+
+    /// <summary>
+    /// Purpose: Plays a UI sound if audio feedback is enabled and a clip is available.
+    /// Input: Audio clip and desired volume.
+    /// Output: One-shot 2D UI audio playback.
+    /// </summary>
+    private void PlaySound(AudioClip clip, float volume, bool stopCurrentSound = false)
+    {
+        if (!playSounds || clip == null || volume <= 0f)
+        {
+            return;
+        }
+
+        AudioSource audioSource = GetSharedAudioSource();
+        if (audioSource != null)
+        {
+            if (stopCurrentSound)
+            {
+                audioSource.Stop();
+            }
+
+            audioSource.PlayOneShot(clip, volume);
+        }
+    }
+
+    /// <summary>
+    /// Purpose: Gets the configured hover sound or loads the default Resources clip.
+    /// Input: Optional serialized clip and default Resources path.
+    /// Output: AudioClip for hover feedback, if available.
+    /// </summary>
+    private AudioClip GetHoverSound()
+    {
+        LoadDefaultSoundsIfNeeded();
+        return hoverSound != null ? hoverSound : sharedHoverSound;
+    }
+
+    /// <summary>
+    /// Purpose: Gets the configured click sound or loads the default Resources clip.
+    /// Input: Optional serialized clip and default Resources path.
+    /// Output: AudioClip for click feedback, if available.
+    /// </summary>
+    private AudioClip GetClickSound()
+    {
+        LoadDefaultSoundsIfNeeded();
+        return clickSound != null ? clickSound : sharedClickSound;
+    }
+
+    /// <summary>
+    /// Purpose: Loads default UI audio clips once from Resources.
+    /// Input: Resource paths configured on the button effect.
+    /// Output: Cached default hover and click clips.
+    /// </summary>
+    private void LoadDefaultSoundsIfNeeded()
+    {
+        if (loadedDefaultSounds)
+        {
+            return;
+        }
+
+        loadedDefaultSounds = true;
+        sharedHoverSound = Resources.Load<AudioClip>(hoverSoundResourcePath);
+        sharedClickSound = Resources.Load<AudioClip>(clickSoundResourcePath);
+    }
+
+    /// <summary>
+    /// Purpose: Provides a persistent shared 2D AudioSource for menu UI sounds.
+    /// Input: Current scene and existing shared source.
+    /// Output: AudioSource configured for non-spatial UI playback.
+    /// </summary>
+    private AudioSource GetSharedAudioSource()
+    {
+        if (sharedAudioSource != null)
+        {
+            return sharedAudioSource;
+        }
+
+        GameObject audioObject = new GameObject("MainMenu_UI_Audio");
+        DontDestroyOnLoad(audioObject);
+        sharedAudioSource = audioObject.AddComponent<AudioSource>();
+        sharedAudioSource.playOnAwake = false;
+        sharedAudioSource.loop = false;
+        sharedAudioSource.spatialBlend = 0f;
+        return sharedAudioSource;
+    }
+
+    /// <summary>
     /// Purpose: Keeps animation values in useful ranges while editing the menu.
     /// Input: Current serialized field values.
     /// Output: Clamped scale and animation-speed settings.
@@ -324,5 +529,7 @@ public class MainMenuButtonHoverEffect : MonoBehaviour,
         hoverScale = Mathf.Max(0.01f, hoverScale);
         pressedScale = Mathf.Max(0.01f, pressedScale);
         animationSpeed = Mathf.Max(0.01f, animationSpeed);
+        hoverVolume = Mathf.Clamp01(hoverVolume);
+        clickVolume = Mathf.Clamp01(clickVolume);
     }
 }
