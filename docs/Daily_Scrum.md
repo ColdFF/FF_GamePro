@@ -169,3 +169,11 @@ Each entry should briefly answer:
 | What was completed? | Completed the project-side menu and level-flow update. A new `MainMenu` scene was added, the current playable levels were added to Build Settings, level completion can continue through the chapter transition flow, and each level now has instruction and pause support. The project update was staged carefully and committed on the menu/level-flow feature branch. |
 | What will be worked on next? | Continue refining the menu logic, especially checking navigation behaviour, button feedback, return-to-menu flow, and whether the level sequence feels clear when played from the start. Documentation should also be updated for the new menu flow, testing notes, and UI font usage. |
 | Blockers, risks, or problems | The feature touches all playable scenes, so regression testing across Level 01 to Level 04 is still important. The remaining local Unity-generated changes should stay out of the documentation commit unless they are reviewed and proven necessary. |
+
+### 2026-06-12 - Menu Instructions and UI Audio Polish
+
+| Question | Notes |
+| --- | --- |
+| What was completed? | Polished the main menu instructions flow by adding a two-page `HOW TO PLAY` popup with Goal/Core Mechanic content on the first page and Controls on the second page. Refined button behaviour so menu, instruction, and level-complete buttons reset after hover/click instead of staying visually selected. Added UI hover and click-confirm sound effects, restyled the level-complete buttons back toward the project's black/white menu language, and fixed hidden button hover sounds during chapter subtitle transitions. The project update was committed and pushed through the project polish branch. |
+| What will be worked on next? | Update the documentation branch with the new UI audio credits, Daily Scrum notes, and Testing Log evidence. After that, continue final regression testing across the main menu, level transitions, and level-complete screens before final submission. |
+| Blockers, risks, or problems | UI polish touches shared menu scripts and transition flow, so it needs careful regression testing to ensure audio feedback does not trigger from inactive or hidden UI. Generated and processed UI audio also needs accurate asset-credit documentation. |

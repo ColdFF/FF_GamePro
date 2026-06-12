@@ -541,3 +541,40 @@ Each test entry should include:
 | Expected result | The game should be able to start from `MainMenu`, load the playable levels in order, show the appropriate instruction UI, allow pausing during gameplay, and move to the configured next level from the completion menu. |
 | Actual result | The new menu and level-flow update was checked through the staged Unity project files. `MainMenu` and the four playable scenes are now listed in Build Settings, the later levels have pause and instruction UI support, Level 03 includes the rope-swing instruction page, and level completion can use the chapter transition flow to continue to the next scene. |
 | Status | Pass |
+
+### 2026-06-12 - Main Menu Instructions Popup Test
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Main menu `Instructions` button and two-page `HOW TO PLAY` popup |
+| Expected result | Selecting `Instructions` from the main menu should open a readable popup. The first page should explain the game goal and core mechanic, the second page should list the controls, and `Next`, `Back`, and `Close` should navigate without breaking the existing menu buttons. |
+| Actual result | The instructions popup opens from the main menu, splits the content into a less crowded two-page layout, keeps controls aligned in a readable column, and allows the player to move between pages or close the popup while returning to the main menu state. |
+| Status | Pass |
+
+### 2026-06-12 - Main Menu Button State and UI Audio Retest
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Main menu, instruction popup, and menu button hover/click feedback |
+| Expected result | Buttons should show hover and click feedback only while the pointer is interacting with them, then return to their normal visual state. Hover should play a softer UI sound, and clicking should play a cleaner confirmation sound without layered or confusing audio. |
+| Actual result | Button selected-state persistence was corrected so buttons no longer remain visually pressed or highlighted after the pointer moves away or the click completes. `MenuHoverSoft.wav` is used for soft hover feedback, and `MenuClickConfirm.wav` is used for the click-confirm cue. |
+| Status | Fixed |
+
+### 2026-06-12 - Level Complete Menu Button Polish Test
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Level-complete menu button styling, hover feedback, click feedback, and audio |
+| Expected result | The `LEVEL COMPLETE` menu should keep a simple black/white style consistent with the rest of the project UI. Its buttons should respond to hover and click actions with matching visual and audio feedback. |
+| Actual result | The level-complete menu buttons were restyled toward the original black/white UI language, and the runtime button feedback now uses the same soft hover and click-confirm audio approach as the main menu. Button visual states reset after interaction. |
+| Status | Pass |
+
+### 2026-06-12 - Chapter Transition Hidden Button Audio Retest
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Hidden UI interaction during subtitle-style chapter transitions |
+| Expected result | During transitions from the main menu into Level 01 and from one level to the next, moving the mouse over the screen should not trigger hover sounds from buttons that are no longer visible or should no longer be interactive. |
+| Actual result | The transition overlay now blocks raycasts, selected UI state is cleared when the transition starts, and menu hover feedback is suppressed while the chapter transition is playing. Moving the cursor during the subtitle transition no longer triggers hidden button hover sounds. |
+| Status | Fixed |
+
