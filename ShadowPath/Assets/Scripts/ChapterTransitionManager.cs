@@ -1,6 +1,7 @@
 using System.Collections;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
@@ -174,6 +175,7 @@ public class ChapterTransitionManager : MonoBehaviour
             StopCoroutine(transitionRoutine);
         }
 
+        ClearSelectedUiObject();
         transitionRoutine = StartCoroutine(PlayTransition(sceneName, chapterLines));
     }
 
@@ -343,7 +345,7 @@ public class ChapterTransitionManager : MonoBehaviour
 
         Image image = backgroundObject.AddComponent<Image>();
         image.color = Color.black;
-        image.raycastTarget = false;
+        image.raycastTarget = true;
     }
 
     /// <summary>
@@ -371,5 +373,18 @@ public class ChapterTransitionManager : MonoBehaviour
         text.raycastTarget = false;
         text.text = string.Empty;
         return text;
+    }
+
+    /// <summary>
+    /// Purpose: Clears any selected button before the chapter interlude starts.
+    /// Input: Current EventSystem selection.
+    /// Output: Previous scene UI no longer keeps selected or hover-like state while the transition overlay is active.
+    /// </summary>
+    private void ClearSelectedUiObject()
+    {
+        if (EventSystem.current != null)
+        {
+            EventSystem.current.SetSelectedGameObject(null);
+        }
     }
 }
