@@ -26,7 +26,7 @@
 
 
 
-**Next action:** My next action is to build a very small playable prototype first. I will start by creating a simple Unity scene with a lunar rover player, one light source, a few basic objects, and a goal area. Then I will test whether the rover can move and jump on shadow platforms, and whether changing the light angle can create a usable path to the goal. At this stage, I will focus only on proving that the core shadow-platform mechanic works before adding extra levels, art, sound, or advanced puzzle features.
+**Next action:** My next action is to build a very small playable prototype first. I will start by creating a simple Unity scene with a small player character, one light source, a few basic objects, and a goal area. Then I will test whether the character can move and jump on shadow platforms, and whether changing the light angle can create a usable path to the goal. At this stage, I will focus only on proving that the core shadow-platform mechanic works before adding extra levels, art, sound, or advanced puzzle features.
 
 
 
@@ -50,7 +50,7 @@ I will build one short playable level with a player character, one adjustable li
 
 **Must-have:**
 
-The game must include a controllable lunar rover, basic movement and jumping, adjustable light angle, objects that cast shadows, shadow platforms the rover can stand on, and one goal-based level.
+The game must include a controllable player character, basic movement and jumping, adjustable light angle, objects that cast shadows, shadow platforms the character can stand on, and one goal-based level.
 
 **Should-have:**
 
@@ -58,7 +58,7 @@ The game should include smooth controls, clear visual feedback, simple UI for li
 
 **Could-have:**
 
-The game could include multiple levels, moving objects, collectibles, different light sources, animated rover wheels, and extra puzzle variations.
+The game could include multiple levels, moving objects, collectibles, different light sources, character animations, and extra puzzle variations.
 
 
 
