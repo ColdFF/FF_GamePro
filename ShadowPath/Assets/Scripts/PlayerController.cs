@@ -1,65 +1,98 @@
 using UnityEngine;
 
 /// <summary>
-/// Purpose: Controls player movement, jumping, animation, and slope-aware shadow walking.
-/// Input: Keyboard movement input, jump input, Rigidbody physics, and Ground layer collision.
-/// Output: Moves the player across flat and sloped shadow surfaces without snapping to new shadows.
+/// Purpose: Controls the player character, including movement, jumping, animation, sound, and shadow-platform walking.
+/// Input: A/D, Shift, W/Space, Rigidbody physics, and ground or shadow colliders.
+/// Output: Moves the player reliably on normal platforms and generated shadow platforms.
 /// </summary>
 [RequireComponent(typeof(Rigidbody))]
 public class PlayerController : MonoBehaviour
 {
     [Header("Movement Settings")]
+    // How fast the player walks left or right.
     public float walkSpeed = 2.5f;
+    // How fast the player moves when Shift is held.
     public float runSpeed = 5f;
+    // How strongly the player jumps upward.
     public float jumpForce = 6f;
 
     [Header("Ground Check")]
+    // Feet marker used as the place to check for floor.
     public Transform groundCheck;
+    // Width of the feet check area.
     public float groundCheckRadius = 0.14f;
+    // Which layers count as floor or shadow platforms.
     public LayerMask groundLayer;
 
     [Header("Slope Walking")]
+    // Biggest slope the player can still walk on; steeper surfaces are treated like walls.
     public float maxWalkableSlopeAngle = 52f;
+    // Starts the floor check a little above the feet, so it does not miss the ground.
     public float groundProbeStartOffset = 0.18f;
+    // How far below the feet the script looks for ground.
     public float groundProbeDistance = 0.35f;
+    // Tiny downward push that helps the player stay on a slope instead of floating.
     public float groundStickVelocity = 0.25f;
+    // If the ground is farther than this from the feet, the player counts as in the air.
     public float maxGroundedFootDistance = 0.1f;
     [Header("Wall Slide Guard")]
+    // How far left or right the script checks for a wall.
     public float wallCheckDistance = 0.22f;
+    // How high on the player body the wall check is made.
     public float wallCheckHeightOffset = 0.45f;
+    // Decides when a side surface is too vertical and should block movement.
     public float maxWallClimbNormalY = 0.35f;
+    // Keeps the player from feeling slower just because they are walking on a slope.
     public bool preserveHorizontalSpeedOnSlopes = true;
+    // Safety limit so slope movement cannot make the player too fast.
     public float maxSlopeSpeedMultiplier = 1.25f;
 
     [Header("Jump Feel")]
+    // How long the game remembers a jump press made slightly early.
     public float jumpBufferTime = 0.12f;
+    // How long the player can still jump after stepping off an edge.
     public float coyoteTime = 0.1f;
+    // Short delay after jumping before the player can count as grounded again.
     public float postJumpGroundLockTime = 0.12f;
 
     [Header("External Launch")]
+    // How long rope launch speed is kept before A/D can change air movement again.
     public float externalLaunchAirControlDelay = 0.22f;
 
     [Header("Jump Audio")]
+    // Object that plays the player's sounds.
     public AudioSource playerAudioSource;
+    // Sound used when a real jump starts.
     public AudioClip jumpSound;
+    // Loudness of the jump sound.
     [Range(0f, 1f)] public float jumpSoundVolume = 0.7f;
 
     [Header("Footstep Audio")]
+    // Footstep sound used on normal platforms.
     public AudioClip footstepSound;
+    // Loudness of normal platform footsteps.
     [Range(0f, 1f)] public float footstepSoundVolume = 0.45f;
+    // Delay between walking footstep sounds.
     public float walkFootstepInterval = 0.38f;
+    // Delay between running footstep sounds.
     public float runFootstepInterval = 0.26f;
 
     [Header("Shadow Footstep Audio")]
+    // Softer footstep sound used on shadow platforms.
     public AudioClip shadowFootstepSound;
+    // Loudness of shadow walking footsteps.
     [Range(0f, 1f)] public float shadowFootstepSoundVolume = 0.28f;
+    // Optional faster footstep sound used when running on shadow platforms.
     public AudioClip shadowRunFootstepSound;
+    // Loudness of shadow running footsteps.
     [Range(0f, 1f)] public float shadowRunFootstepSoundVolume = 0.28f;
 
     [Header("Visual")]
+    // Child visual object that flips left or right when the player changes direction.
     public Transform visual;
 
     [Header("Animation")]
+    // Animator that plays the player's walk, run, and jump animations.
     public Animator animator;
 
     private Rigidbody rb;
@@ -75,22 +108,25 @@ public class PlayerController : MonoBehaviour
     private Vector3 groundNormal = Vector3.up;
     private Collider currentGroundCollider;
 
+    // Lets other scripts check if the player is currently standing on something.
     public bool IsGrounded => isGrounded;
+    // Lets other scripts know which way the current ground is tilted.
     public Vector3 GroundNormal => groundNormal;
+    // Lets other scripts know which collider the player is standing on.
     public Collider CurrentGroundCollider => currentGroundCollider;
 
-    // Purpose: Initializes required physics references when the game starts.
-    // Input: Rigidbody component on the Player object.
-    // Output: Stores the Rigidbody reference for movement and jumping.
+    // Purpose: Gets the player's physics body when the level starts.
+    // Input: The Rigidbody on this Player object.
+    // Output: Saves it so the script can move and jump the player.
     void Start()
     {
         rb = GetComponent<Rigidbody>();
     }
 
     /// <summary>
-    /// Purpose: Refreshes stable movement and animation state before gameplay input is unlocked.
-    /// Input: Current Rigidbody state and ground probe result.
-    /// Output: Prevents a one-frame airborne animation or small velocity twitch when this component is re-enabled.
+    /// Purpose: Resets the player before control is returned.
+    /// Input: Current player physics and ground state.
+    /// Output: Stops small shakes or wrong jump animation when input unlocks.
     /// </summary>
     public void PrepareForInputUnlock()
     {
@@ -128,9 +164,9 @@ public class PlayerController : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Records that a shadow platform moved the player in this physics step.
-    /// Input: Movement delta from the shadow platform.
-    /// Output: Downward stick force is skipped for this step.
+    /// Purpose: Records that a moving shadow platform has carried the player.
+    /// Input: How far the shadow platform moved.
+    /// Output: Stops the player from being pulled downward during that carry.
     /// </summary>
     public void NotifyShadowCarry(Vector3 delta)
     {
@@ -151,9 +187,9 @@ public class PlayerController : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Moves the player with a shadow platform right away.
-    /// Input: Movement delta from the shadow platform.
-    /// Output: Player position and physics data match the new shadow position in this step.
+    /// Purpose: Moves the player with a moving shadow platform right away.
+    /// Input: How far the shadow platform moved.
+    /// Output: Player follows the shadow platform instead of being left behind.
     /// </summary>
     public void ApplyShadowCarry(Vector3 delta)
     {
@@ -176,9 +212,9 @@ public class PlayerController : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Applies an external launch velocity and briefly prevents normal air control from overwriting it.
-    /// Input: Launch velocity and optional air-control delay.
-    /// Output: The player keeps rope or scripted launch momentum even when no horizontal key is held.
+    /// Purpose: Lets another system throw or push the player.
+    /// Input: Launch speed, usually from rope release.
+    /// Output: Player keeps that thrown speed for a short time.
     /// </summary>
     public void ApplyExternalLaunch(Vector3 launchVelocity, float airControlDelay = -1f)
     {
@@ -201,9 +237,9 @@ public class PlayerController : MonoBehaviour
         ClearGroundState();
     }
 
-    // Purpose: Reads frame-based player input and updates animation state.
-    // Input: Keyboard input and the latest physics state.
-    // Output: Stores movement intent, stores jump input briefly, and updates Animator parameters.
+    // Purpose: Handles things that need to be checked every frame.
+    // Input: Keyboard keys and current player state.
+    // Output: Reads movement, remembers jump presses, updates animation, and plays footsteps.
     void Update()
     {
         ReadInput();
@@ -213,9 +249,9 @@ public class PlayerController : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Runs player physics at a stable step.
-    /// Input: Stored input, Rigidbody state, and ground check data.
-    /// Output: Moves the player, handles jump, and clears shadow carry data.
+    /// Purpose: Handles the player's physics movement.
+    /// Input: Stored input, physics body, and ground check result.
+    /// Output: Updates ground state, jump, movement, and shadow-platform carry.
     /// </summary>
     void FixedUpdate()
     {
@@ -228,9 +264,9 @@ public class PlayerController : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Clears shadow platform carry data after one physics step.
+    /// Purpose: Clears the shadow-platform carry flag after one physics step.
     /// Input: None.
-    /// Output: The next physics step starts with no shadow carry data.
+    /// Output: The next physics step starts normally.
     /// </summary>
     void ResetShadowCarryState()
     {
@@ -238,17 +274,17 @@ public class PlayerController : MonoBehaviour
         shadowCarryDeltaThisFixedStep = Vector3.zero;
     }
 
-    // Purpose: Reads horizontal movement input from the keyboard.
-    // Input: A key and D key.
-    // Output: Stores -1 for left, 1 for right, and 0 for no movement.
+    // Purpose: Checks if the player wants to move left or right.
+    // Input: A and D keys.
+    // Output: Saves left, right, or no movement.
     void ReadInput()
     {
         moveInput = GetMoveInput();
     }
 
-    // Purpose: Records jump input for a short time so it is not lost between Update and FixedUpdate.
-    // Input: W key or Space key.
-    // Output: Refreshes the jump buffer timer.
+    // Purpose: Remembers a jump press for a very short time.
+    // Input: W or Space.
+    // Output: Allows a slightly early jump press to still work.
     void ReadJumpInput()
     {
         bool jumpPressed = Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.Space);
@@ -259,9 +295,9 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    // Purpose: Updates grounded state while briefly ignoring ground immediately after jumping.
-    // Input: Ground probe settings and post-jump lock timer.
-    // Output: Updates whether the player is standing on a valid walkable surface.
+    // Purpose: Decides whether the player is standing on something.
+    // Input: Floor-check settings and the short delay after jumping.
+    // Output: Marks the player as grounded only on a valid surface.
     void UpdateGroundState()
     {
         if (postJumpGroundLockCounter > 0f)
@@ -274,9 +310,9 @@ public class PlayerController : MonoBehaviour
         CheckGround();
     }
 
-    // Purpose: Checks whether the player is standing on a walkable ground surface close enough to the feet.
-    // Input: GroundCheck position, probe radius, probe distance, Ground layer, surface normal, and foot distance tolerance.
-    // Output: Updates grounded state only when the player is truly close to a valid walkable surface.
+    // Purpose: Looks under the player's feet for floor or shadow platform.
+    // Input: Feet position, check size, floor layer, and allowed slope angle.
+    // Output: Saves the floor if it is close enough and not too steep.
     void CheckGround()
     {
         ClearGroundState();
@@ -336,9 +372,9 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    // Purpose: Clears the current ground contact information.
+    // Purpose: Clears old floor information.
     // Input: None.
-    // Output: Resets grounded state, ground normal, and current ground collider.
+    // Output: Treats the player as in the air until floor is found again.
     void ClearGroundState()
     {
         isGrounded = false;
@@ -346,9 +382,9 @@ public class PlayerController : MonoBehaviour
         currentGroundCollider = null;
     }
 
-    // Purpose: Keeps the player jumpable for a short time after leaving a surface.
-    // Input: Current grounded state.
-    // Output: Updates the coyote-time counter.
+    // Purpose: Lets the player jump for a tiny moment after leaving an edge.
+    // Input: Whether the player is standing on ground right now.
+    // Output: Updates the short late-jump timer.
     void UpdateCoyoteCounter()
     {
         if (isGrounded)
@@ -361,9 +397,9 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    // Purpose: Counts down stored jump input if it has not been used.
-    // Input: Current jump buffer timer.
-    // Output: Reduces the jump buffer timer over time.
+    // Purpose: Counts down the remembered jump press.
+    // Input: Current remembered-jump time.
+    // Output: Forgets the jump press after a short delay.
     void UpdateJumpBufferCounter()
     {
         if (jumpBufferCounter > 0f)
@@ -372,9 +408,9 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    // Purpose: Applies jump velocity when buffered jump input and valid ground timing overlap.
-    // Input: Jump buffer timer, coyote timer, and Rigidbody velocity.
-    // Output: Starts a jump without being cancelled by immediate ground re-detection.
+    // Purpose: Makes the player jump when the timing is valid.
+    // Input: Remembered jump press, late-jump timer, and player velocity.
+    // Output: Gives the player upward speed.
     void ApplyBufferedJump()
     {
         if (jumpBufferCounter <= 0f || coyoteCounter <= 0f)
@@ -393,9 +429,9 @@ public class PlayerController : MonoBehaviour
         ClearGroundState();
     }
 
-    // Purpose: Plays the jump sound only when a buffered jump is actually applied.
-    // Input: Jump Audio inspector fields.
-    // Output: Emits one jump sound without playing during invalid airborne jump input.
+    // Purpose: Plays the jump sound only when the player really jumps.
+    // Input: Jump sound settings from the Inspector.
+    // Output: Plays one jump sound.
     void PlayJumpSound()
     {
         if (jumpSound == null)
@@ -416,9 +452,9 @@ public class PlayerController : MonoBehaviour
         playerAudioSource.PlayOneShot(jumpSound, jumpSoundVolume);
     }
 
-    // Purpose: Plays repeated footstep sounds only while the player is grounded and moving.
-    // Input: Grounded state, horizontal input, Shift input, and footstep audio settings.
-    // Output: Emits footstep sounds at a walking or running cadence without playing in midair.
+    // Purpose: Plays footstep sounds when the player is moving on a surface.
+    // Input: Ground state, movement, Shift key, and footstep sound settings.
+    // Output: Plays normal or shadow footsteps at the right speed.
     void UpdateFootstepAudio()
     {
         if (!isGrounded || Mathf.Approximately(moveInput, 0f))
@@ -461,9 +497,9 @@ public class PlayerController : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Selects the correct footstep clip for normal platforms or shadow platforms.
-    /// Input: Whether the player is on shadow geometry and whether they are running.
-    /// Output: Audio clip used for the next footstep.
+    /// Purpose: Chooses the correct footstep sound.
+    /// Input: Whether the player is on shadow ground and whether they are running.
+    /// Output: The sound clip for the next footstep.
     /// </summary>
     AudioClip GetFootstepClip(bool isOnShadowSurface, bool isRunning)
     {
@@ -481,9 +517,9 @@ public class PlayerController : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Selects the matching volume for the current footstep surface.
-    /// Input: Whether the player is on shadow geometry and whether they are running.
-    /// Output: Volume used for the next footstep.
+    /// Purpose: Chooses how loud the footstep should be.
+    /// Input: Whether the player is on shadow ground and whether they are running.
+    /// Output: The footstep volume.
     /// </summary>
     float GetFootstepVolume(bool isOnShadowSurface, bool isRunning)
     {
@@ -501,9 +537,9 @@ public class PlayerController : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Detects whether the current ground collider belongs to generated shadow traversal geometry.
-    /// Input: Current ground collider from the ground probe.
-    /// Output: True when shadow-specific footstep audio should be used.
+    /// Purpose: Checks if the player is standing on generated shadow ground.
+    /// Input: The current floor collider.
+    /// Output: True if shadow footstep sounds should be used.
     /// </summary>
     bool IsStandingOnShadowSurface()
     {
@@ -528,9 +564,9 @@ public class PlayerController : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Applies walk and run movement.
-    /// Input: Move input, run key, ground state, and shadow carry data.
-    /// Output: Updates Rigidbody velocity without extra downward stick after shadow carry.
+    /// Purpose: Moves the player for this physics step.
+    /// Input: A/D input, Shift key, ground state, and shadow carry state.
+    /// Output: Updates the player's speed and direction.
     /// </summary>
     void Move()
     {
@@ -600,9 +636,9 @@ public class PlayerController : MonoBehaviour
         UpdateVisualDirection(moveInput);
     }
 
-    // Purpose: Checks whether the player is pressing horizontally into a steep edge or wall while airborne.
-    // Input: Horizontal movement input, player position, Ground layer, wall check distance, and wall normal threshold.
-    // Output: Returns true when air movement should not push the player into the wall or steep edge.
+    // Purpose: Stops the player from pushing into a wall while in the air.
+    // Input: Left/right input and a short side check.
+    // Output: True if side movement should be stopped.
     bool IsPressingIntoWallOrSteepEdge(float input)
     {
         if (Mathf.Approximately(input, 0f))
@@ -637,9 +673,9 @@ public class PlayerController : MonoBehaviour
         return normalY <= maxWallClimbNormalY;
     }
 
-    // Purpose: Calculates movement direction along the current slope.
-    // Input: Horizontal input, movement speed, and the current ground normal.
-    // Output: Returns a velocity that follows the walkable surface instead of forcing flat movement.
+    // Purpose: Adjusts movement so the player can walk along a slope.
+    // Input: Left/right input, speed, and slope direction.
+    // Output: A movement speed that follows the slope.
     Vector3 GetSlopeMoveVelocity(float input, float speed)
     {
         Vector3 horizontalDirection = new Vector3(input, 0f, 0f);
@@ -677,6 +713,9 @@ public class PlayerController : MonoBehaviour
         return Vector3.ClampMagnitude(targetVelocity, maxAllowedSpeed);
     }
 
+    // Purpose: Checks if a collider is one of the generated walkable shadow edges.
+    // Input: Collider found by the side check.
+    // Output: True if it should still count as walkable shadow ground.
     bool IsWalkableGeneratedShadowCollider(Collider hitCollider)
     {
         if (hitCollider == null)
@@ -690,9 +729,9 @@ public class PlayerController : MonoBehaviour
                colliderName.Contains("GeneratedCurvedWalkableEdge");
     }
 
-    // Purpose: Flips the visual sprite based on movement direction.
-    // Input: Horizontal movement input.
-    // Output: Updates the visual local scale without changing physics scale.
+    // Purpose: Turns the character picture left or right.
+    // Input: Left/right movement input.
+    // Output: Flips only the visual child, not the physics body.
     void UpdateVisualDirection(float input)
     {
         if (visual == null)
@@ -710,9 +749,9 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    // Purpose: Updates Animator parameters based on current player state.
-    // Input: Movement input, Shift key state, and grounded state.
-    // Output: Sets isWalking, isRunning, and isJumping in the Animator.
+    // Purpose: Tells the Animator what the player is doing.
+    // Input: Movement input, Shift key, and whether the player is on ground.
+    // Output: Updates walk, run, and jump animation switches.
     void UpdateAnimation()
     {
         if (animator == null)
@@ -731,9 +770,9 @@ public class PlayerController : MonoBehaviour
         animator.SetBool("isJumping", isJumping);
     }
 
-    // Purpose: Reads horizontal movement input from the keyboard.
-    // Input: A key and D key.
-    // Output: Returns -1 for left, 1 for right, and 0 for no movement.
+    // Purpose: Turns A/D key presses into a simple movement value.
+    // Input: A and D keys.
+    // Output: -1 means left, 1 means right, 0 means no movement.
     float GetMoveInput()
     {
         if (Input.GetKey(KeyCode.A))

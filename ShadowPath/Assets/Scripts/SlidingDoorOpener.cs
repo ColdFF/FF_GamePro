@@ -2,73 +2,117 @@ using System.Collections;
 using UnityEngine;
 
 /// <summary>
-/// Purpose: Opens a sliding door when the player enters a trigger area.
-/// Input: Player trigger contact and configured moving door parts.
-/// Output: Moves the selected door parts from their closed local positions to open local positions.
+/// Purpose: Opens a sliding door when the player reaches it.
+/// Input: Player trigger contact, door parts, and optional entry-sequence settings.
+/// Output: The door slides open, and it can optionally move the player into the doorway.
 /// </summary>
 [RequireComponent(typeof(BoxCollider))]
 public class SlidingDoorOpener : MonoBehaviour
 {
     [Header("Moving Parts")]
+    // Door pieces that should slide when the door opens.
     public Transform[] movingParts;
+    // How far each door piece moves from its closed position.
     public Vector3 localOpenOffset = new Vector3(1.5f, 0f, 0f);
 
     [Header("Open Motion")]
+    // Time the door takes to open.
     public float openDuration = 0.8f;
+    // Controls the feel of the opening motion, such as slow start and slow end.
     public AnimationCurve openCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+    // If true, the door cannot be opened again after the first time.
     public bool openOnlyOnce = true;
 
     [Header("Door Audio")]
+    // AudioSource used to play door sounds.
     public AudioSource doorAudioSource;
+    // Sound played when the door opens.
     public AudioClip openSound;
+    // Sound played when the door closes.
     public AudioClip closeSound;
+    // Volume of the door sounds.
     [Range(0f, 1f)] public float doorSoundVolume = 0.7f;
 
     [Header("Reveal Visual")]
+    // Optional black/reveal object shown behind the door as it opens.
     public GameObject revealObject;
+    // Renderer for the reveal object.
     public Renderer revealRenderer;
+    // Color used for the reveal object.
     public Color revealColor = Color.black;
+    // Strongest alpha/visibility of the reveal object.
     [Range(0f, 1f)] public float revealMaxAlpha = 1f;
+    // If true, the reveal object fades in as the door opens.
     public bool fadeRevealWithDoor = true;
 
     [Header("Entry Sequence")]
+    // If true, the player is automatically moved into the doorway after opening.
     public bool runEntrySequenceAfterOpen = false;
+    // Target point the player walks toward during the entry sequence.
     public Transform entryTarget;
+    // If true, only the target X changes and the player's Y/Z stay mostly unchanged.
     public bool useEntryTargetXOnly = true;
+    // Short pause after the door opens before the player walks in.
     public float waitAfterOpen = 0.15f;
+    // If true, waits until the player is on the ground before the scripted walk starts.
     public bool waitForGroundBeforeEntry = true;
+    // Longest time to wait for the player to land.
     public float maxWaitForGroundTime = 1.5f;
+    // Time the player takes to walk into the doorway.
     public float entryWalkDuration = 1f;
+    // Controls the feel of the scripted player walk.
     public AnimationCurve entryWalkCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+    // If true, the player fades out while walking into the doorway.
     public bool fadePlayerDuringEntry = false;
+    // Entry progress before player fading begins.
     [Range(0f, 1f)] public float fadePlayerAfterProgress = 0.25f;
+    // Pause before the door closes after the player enters.
     public float waitBeforeClose = 0.2f;
+    // If true, the door closes after the entry sequence.
     public bool closeDoorAfterEntry = true;
+    // Time the door takes to close.
     public float closeDuration = 0.8f;
+    // Controls the feel of the closing motion.
     public AnimationCurve closeCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+    // Visual root of the player, used for fading/hiding.
     public GameObject playerVisualRoot;
 
     [Header("Entry Occluder")]
+    // Optional black object in front of the doorway to hide the player during entry.
     public GameObject entryOccluderObject;
+    // Renderer for the entry occluder.
     public Renderer entryOccluderRenderer;
+    // Color used by the entry occluder.
     public Color entryOccluderColor = Color.black;
+    // If true, the occluder starts hidden and only appears during entry.
     public bool hideEntryOccluderUntilEntry = true;
 
     [Header("Camera Return")]
+    // If true, camera returns to the overview shot after the door finishes closing.
     public bool returnCameraToOverviewAfterClose = true;
+    // Camera controller used to return to overview.
     public TutorialCameraController tutorialCameraController;
 
     [Header("Input Lock References")]
+    // Player controller disabled during the scripted entry sequence.
     public PlayerController playerController;
+    // Light controller disabled during the scripted entry sequence.
     public LightAngleController lightAngleController;
+    // Local wash light controller disabled during the scripted entry sequence.
     public CameraLocalWashLightController localWashLightController;
+    // Player Rigidbody used to stop physics during the scripted entry sequence.
     public Rigidbody playerRigidbody;
+    // Ground layers used to check whether the player has landed.
     public LayerMask entryGroundLayer = 1 << 3;
+    // Distance used to check for ground below the player.
     public float entryGroundCheckDistance = 0.35f;
 
     [Header("Trigger")]
+    // Tag used to recognise the player.
     public string playerTag = "Player";
+    // If true, trigger detection can ignore Z depth for 2.5D scenes.
     public bool use2DProximityFallback = true;
+    // Player Transform used by the 2D fallback check.
     public Transform player;
 
     private BoxCollider triggerCollider;
@@ -87,9 +131,9 @@ public class SlidingDoorOpener : MonoBehaviour
     private bool hasStartedEntrySequence;
 
     /// <summary>
-    /// Purpose: Prepares the trigger collider and remembers each moving part's closed local position.
-    /// Input: Inspector-assigned moving parts.
-    /// Output: Door is ready to open from its current placed position.
+    /// Purpose: Prepares the door when the level starts.
+    /// Input: Trigger collider, moving door parts, reveal visuals, and occluder settings.
+    /// Output: The door knows its closed position and is ready to open.
     /// </summary>
     void Awake()
     {
@@ -102,9 +146,9 @@ public class SlidingDoorOpener : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Provides a 2.5D fallback for doors placed at a different Z depth from the player.
-    /// Input: Player world position and this trigger's local X/Y rectangle.
-    /// Output: Opens the door when the player visually enters the trigger area.
+    /// Purpose: Checks the player position for 2.5D trigger detection.
+    /// Input: Player position and this trigger's X/Y area.
+    /// Output: The door opens when the player visually enters the area.
     /// </summary>
     void Update()
     {
@@ -130,9 +174,9 @@ public class SlidingDoorOpener : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Starts opening when the player reaches the door trigger.
-    /// Input: Trigger collider contact.
-    /// Output: Door opening animation starts once the player is close enough.
+    /// Purpose: Opens the door when the player enters the trigger.
+    /// Input: Trigger contact.
+    /// Output: Door opening starts if the collider belongs to the player.
     /// </summary>
     void OnTriggerEnter(Collider other)
     {
@@ -145,9 +189,9 @@ public class SlidingDoorOpener : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Opens the door even if the player was already overlapping when play mode started.
-    /// Input: Trigger collider contact.
-    /// Output: Door opening animation starts while the player remains in range.
+    /// Purpose: Opens the door if the player is already inside the trigger.
+    /// Input: Trigger contact that continues for more than one frame.
+    /// Output: Door opening can still start.
     /// </summary>
     void OnTriggerStay(Collider other)
     {
@@ -160,9 +204,9 @@ public class SlidingDoorOpener : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Opens the door from code or UI events.
-    /// Input: Current door state.
-    /// Output: Starts or restarts the open animation.
+    /// Purpose: Starts the door opening.
+    /// Input: Current door state and assigned moving parts.
+    /// Output: The opening coroutine begins.
     /// </summary>
     public void Open()
     {
@@ -196,9 +240,9 @@ public class SlidingDoorOpener : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Animates all moving parts from closed to open local positions.
-    /// Input: Cached closed positions, configured offset, duration, and easing curve.
-    /// Output: Door parts slide open smoothly.
+    /// Purpose: Plays the opening movement over time.
+    /// Input: Closed positions, open offset, duration, and open curve.
+    /// Output: Door parts slide from closed to open.
     /// </summary>
     IEnumerator OpenDoorRoutine()
     {
@@ -229,9 +273,9 @@ public class SlidingDoorOpener : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Runs the post-open doorway sequence.
-    /// Input: Player, target point, input components, visual renderers, and close settings.
-    /// Output: Input is locked, player walks into the doorway, fades out, and the door closes.
+    /// Purpose: Runs the optional sequence after the door opens.
+    /// Input: Player, entry target, input components, fade visuals, and close settings.
+    /// Output: The player walks into the doorway, can fade out, and the door may close.
     /// </summary>
     IEnumerator EntrySequenceRoutine()
     {
@@ -273,9 +317,9 @@ public class SlidingDoorOpener : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Prevents manual control during the doorway exit sequence.
-    /// Input: Assigned or auto-found gameplay input components.
-    /// Output: Player and light controls are disabled, and player velocity is cleared.
+    /// Purpose: Stops the player from controlling the character during the entry sequence.
+    /// Input: Player, light, wash-light, and Rigidbody references.
+    /// Output: Player/light controls are disabled and player movement is stopped.
     /// </summary>
     void LockGameplayInput()
     {
@@ -309,9 +353,9 @@ public class SlidingDoorOpener : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Moves the player into the black doorway area while fading the visual out.
-    /// Input: Player position, entry target, entry timing, and fade timing.
-    /// Output: Player reaches the doorway target and becomes invisible.
+    /// Purpose: Moves the player into the doorway automatically.
+    /// Input: Player start position, entry target, walk duration, and fade settings.
+    /// Output: The player reaches the doorway and may become invisible.
     /// </summary>
     IEnumerator MovePlayerIntoDoorRoutine()
     {
@@ -352,9 +396,9 @@ public class SlidingDoorOpener : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Closes the sliding door back to its starting position.
-    /// Input: Close timing and easing curve.
-    /// Output: Door moving parts return to their closed positions.
+    /// Purpose: Plays the closing movement over time.
+    /// Input: Close duration and close curve.
+    /// Output: Door parts return to their closed positions.
     /// </summary>
     IEnumerator CloseDoorRoutine()
     {
@@ -378,9 +422,9 @@ public class SlidingDoorOpener : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Applies one frame of the opening motion.
-    /// Input: Normalized open progress from 0 to 1.
-    /// Output: Updates each moving part's local position.
+    /// Purpose: Sets the door position for one moment in the animation.
+    /// Input: Progress from 0 closed to 1 open.
+    /// Output: Each moving part moves to the matching position.
     /// </summary>
     void ApplyOpenProgress(float progress)
     {
@@ -413,9 +457,9 @@ public class SlidingDoorOpener : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Plays a configured one-shot door sound when opening or closing starts.
-    /// Input: Audio clip assigned in the Inspector.
-    /// Output: Door sound is played through the configured AudioSource.
+    /// Purpose: Plays a door sound once.
+    /// Input: Open or close sound clip.
+    /// Output: The sound plays through the door AudioSource.
     /// </summary>
     void PlayDoorSound(AudioClip clip)
     {
@@ -438,9 +482,9 @@ public class SlidingDoorOpener : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Finds player-related references when they are not assigned in the Inspector.
-    /// Input: Player transform and configured player tag.
-    /// Output: Cached movement, physics, and input-lock references.
+    /// Purpose: Finds player-related components if they were not assigned manually.
+    /// Input: Player Transform or player tag.
+    /// Output: PlayerController, Rigidbody, visual root, and related controllers are cached.
     /// </summary>
     void CachePlayerReferences()
     {
@@ -502,9 +546,9 @@ public class SlidingDoorOpener : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Returns the tutorial camera to its opening wide shot once the door sequence finishes.
-    /// Input: TutorialCameraController reference or scene lookup fallback.
-    /// Output: Camera smoothly transitions back to the overview composition.
+    /// Purpose: Sends the camera back to the overview view.
+    /// Input: TutorialCameraController reference, or a scene search if missing.
+    /// Output: Camera returns to the wider tutorial view.
     /// </summary>
     void ReturnCameraToOverview()
     {
@@ -520,9 +564,9 @@ public class SlidingDoorOpener : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Resolves where the player should walk during the doorway sequence.
+    /// Purpose: Decides where the player should walk during entry.
     /// Input: Current player position and optional entry target.
-    /// Output: World-space target position that keeps player depth unless a target is assigned.
+    /// Output: Target world position for the scripted walk.
     /// </summary>
     Vector3 GetEntryTargetPosition(Vector3 startPosition)
     {
@@ -550,9 +594,9 @@ public class SlidingDoorOpener : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Holds the player in an idle pose while the door opens.
-    /// Input: Cached Animator.
-    /// Output: Walking, running, and jumping animation states are cleared.
+    /// Purpose: Puts the player animation into idle.
+    /// Input: Player Animator.
+    /// Output: Walking, running, and jumping are turned off.
     /// </summary>
     void SetPlayerIdleAnimation()
     {
@@ -567,9 +611,9 @@ public class SlidingDoorOpener : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Controls the scripted walk animation during the entry sequence.
-    /// Input: Whether the player should appear to be walking.
-    /// Output: Animator reflects the automated movement state.
+    /// Purpose: Shows or stops the scripted walking animation.
+    /// Input: Whether the player should look like they are walking.
+    /// Output: Animator walking state is updated.
     /// </summary>
     void SetPlayerWalkingAnimation(bool isWalking)
     {
@@ -584,9 +628,9 @@ public class SlidingDoorOpener : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Sets an Animator bool only when that parameter exists.
-    /// Input: Animator parameter name and value.
-    /// Output: Avoids missing-parameter warnings while updating animation state.
+    /// Purpose: Sets an Animator bool safely.
+    /// Input: Animator parameter name and true/false value.
+    /// Output: The value changes only if that bool exists.
     /// </summary>
     void SetAnimatorBoolIfPresent(string parameterName, bool value)
     {
@@ -599,9 +643,9 @@ public class SlidingDoorOpener : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Checks whether the cached Animator has a bool parameter.
+    /// Purpose: Checks if the Animator has a bool with this name.
     /// Input: Animator parameter name.
-    /// Output: True when the parameter exists and can be set safely.
+    /// Output: True means it is safe to set that bool.
     /// </summary>
     bool HasAnimatorBool(string parameterName)
     {
@@ -625,9 +669,9 @@ public class SlidingDoorOpener : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Moves the player while respecting Rigidbody movement when available.
+    /// Purpose: Moves the player to a target position.
     /// Input: Desired world position.
-    /// Output: Player reaches the sequence position.
+    /// Output: Player Transform or Rigidbody moves there.
     /// </summary>
     void MovePlayerTo(Vector3 worldPosition)
     {
@@ -644,9 +688,9 @@ public class SlidingDoorOpener : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Waits for an airborne player to land before the scripted doorway walk begins.
-    /// Input: Player ground check, Rigidbody vertical velocity, and timeout.
-    /// Output: Entry sequence starts from a natural grounded pose instead of midair.
+    /// Purpose: Waits for the player to land before walking into the doorway.
+    /// Input: Ground check, vertical speed, and timeout.
+    /// Output: Entry starts from the ground when possible.
     /// </summary>
     IEnumerator WaitForPlayerGroundedRoutine()
     {
@@ -667,9 +711,9 @@ public class SlidingDoorOpener : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Checks whether the player has landed and is stable enough to walk into the doorway.
-    /// Input: Rigidbody vertical velocity and a ground raycast from the player's ground check point.
-    /// Output: True when the scripted entry can begin.
+    /// Purpose: Checks if the player is ready for the scripted entry walk.
+    /// Input: Player vertical speed and ground check.
+    /// Output: True means the player is stable enough to start.
     /// </summary>
     bool IsPlayerReadyForEntry()
     {
@@ -682,9 +726,9 @@ public class SlidingDoorOpener : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Detects ground below the player without relying on PlayerController updates.
-    /// Input: Player groundCheck transform when available, fallback player transform, and ground layer.
-    /// Output: True when a ground surface is close below the player.
+    /// Purpose: Checks if there is ground below the player.
+    /// Input: Player ground check point or player position.
+    /// Output: True means ground is close below.
     /// </summary>
     bool HasGroundBelowPlayer()
     {
@@ -714,9 +758,9 @@ public class SlidingDoorOpener : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Freezes physics only after the player is ready for the controlled doorway walk.
+    /// Purpose: Freezes the player for the automatic doorway walk.
     /// Input: Player Rigidbody.
-    /// Output: Scripted entry movement is stable and unaffected by gravity.
+    /// Output: Gravity and physics movement stop during the scripted move.
     /// </summary>
     void FreezePlayerForScriptedEntry()
     {
@@ -732,9 +776,9 @@ public class SlidingDoorOpener : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Caches player renderers and their original visual colors for fading.
+    /// Purpose: Saves the player's renderers before fading.
     /// Input: Player visual root or player object.
-    /// Output: Renderer arrays ready for alpha changes.
+    /// Output: The script knows which materials/colors to fade.
     /// </summary>
     void CachePlayerFadeRenderers()
     {
@@ -779,9 +823,9 @@ public class SlidingDoorOpener : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Converts entry progress into player alpha.
-    /// Input: Normalized entry progress from 0 to 1.
-    /// Output: Player remains visible at first, then fades to invisible.
+    /// Purpose: Converts entry progress into player visibility.
+    /// Input: Entry progress from 0 to 1.
+    /// Output: The player stays visible first, then fades out.
     /// </summary>
     void SetPlayerFadeByEntryProgress(float entryProgress)
     {
@@ -792,9 +836,9 @@ public class SlidingDoorOpener : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Applies player visual alpha.
-    /// Input: Alpha from 0 to 1.
-    /// Output: Player renderers fade smoothly.
+    /// Purpose: Applies the player fade value.
+    /// Input: Alpha from 1 fully visible to 0 invisible.
+    /// Output: Player renderers change visibility.
     /// </summary>
     void SetPlayerAlpha(float alpha)
     {
@@ -835,9 +879,9 @@ public class SlidingDoorOpener : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Hides player visuals once the fade has completed.
-    /// Input: Player visual renderers.
-    /// Output: Player no longer appears in the doorway.
+    /// Purpose: Hides the player after the entry fade.
+    /// Input: Player visual root or player object.
+    /// Output: The player no longer appears in the doorway.
     /// </summary>
     void HidePlayerVisual()
     {
@@ -862,9 +906,9 @@ public class SlidingDoorOpener : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Prepares the black reveal surface so it can fade in during opening.
-    /// Input: Reveal object or renderer assigned in the Inspector.
-    /// Output: Runtime material is transparent and starts hidden.
+    /// Purpose: Prepares the black reveal object behind the door.
+    /// Input: Reveal object or renderer from the Inspector.
+    /// Output: The reveal object starts hidden and ready to fade in.
     /// </summary>
     void PrepareRevealVisual()
     {
@@ -889,9 +933,9 @@ public class SlidingDoorOpener : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Makes common built-in materials respond to alpha changes.
-    /// Input: Runtime material used by the reveal renderer.
-    /// Output: Material uses transparent blending when possible.
+    /// Purpose: Makes a material support fading.
+    /// Input: Runtime material used by reveal or player fading.
+    /// Output: Alpha changes can make the material transparent.
     /// </summary>
     void ConfigureRevealMaterialForFade(Material material)
     {
@@ -915,9 +959,9 @@ public class SlidingDoorOpener : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Applies the reveal fade amount.
-    /// Input: Normalized open progress from 0 to 1.
-    /// Output: Black reveal surface fades in behind the sliding door.
+    /// Purpose: Sets how visible the reveal object is.
+    /// Input: Door open progress from 0 to 1.
+    /// Output: The black reveal fades in behind the door.
     /// </summary>
     void SetRevealProgress(float progress)
     {
@@ -936,9 +980,9 @@ public class SlidingDoorOpener : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Prepares the foreground black occluder used to hide the player while entering.
-    /// Input: Optional occluder object or renderer assigned in the Inspector.
-    /// Output: Occluder is black and hidden until the entry sequence begins.
+    /// Purpose: Prepares the black object that hides the player during entry.
+    /// Input: Optional occluder object or renderer.
+    /// Output: The occluder is black and starts hidden if requested.
     /// </summary>
     void PrepareEntryOccluderVisual()
     {
@@ -961,8 +1005,8 @@ public class SlidingDoorOpener : MonoBehaviour
 
     /// <summary>
     /// Purpose: Shows or hides the entry occluder.
-    /// Input: Desired active state.
-    /// Output: The black foreground mask appears only during the player entry sequence.
+    /// Input: True to show it, false to hide it.
+    /// Output: The black mask appears only during the doorway entry.
     /// </summary>
     void SetEntryOccluderActive(bool isActive)
     {
@@ -980,9 +1024,9 @@ public class SlidingDoorOpener : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Applies the configured black color to the entry occluder material.
-    /// Input: Runtime occluder material.
-    /// Output: Occluder renders as a solid shadow surface.
+    /// Purpose: Applies the chosen color to the entry occluder.
+    /// Input: Occluder material and color setting.
+    /// Output: The occluder renders as the intended black mask.
     /// </summary>
     void SetEntryOccluderColor()
     {
@@ -995,9 +1039,9 @@ public class SlidingDoorOpener : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Detects the player even when the trigger is touched by a child collider.
-    /// Input: Collider entering the trigger.
-    /// Output: True when the collider belongs to the configured player object.
+    /// Purpose: Checks if a collider belongs to the player.
+    /// Input: Collider entering or staying in the trigger.
+    /// Output: True means this is the player or part of the player.
     /// </summary>
     bool IsPlayerCollider(Collider other)
     {
@@ -1028,9 +1072,9 @@ public class SlidingDoorOpener : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Finds the player object by tag for the 2.5D fallback check.
-    /// Input: Configured player tag.
-    /// Output: Caches the player Transform when found.
+    /// Purpose: Finds the player by tag.
+    /// Input: Player tag.
+    /// Output: Player Transform is cached if found.
     /// </summary>
     void FindPlayer()
     {
@@ -1043,9 +1087,9 @@ public class SlidingDoorOpener : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Checks whether the player is inside this trigger's local X/Y rectangle while ignoring depth.
+    /// Purpose: Checks if the player is inside the trigger area in X/Y only.
     /// Input: Player world position.
-    /// Output: True when the player visually reaches the door trigger area.
+    /// Output: True means the player visually reaches the door.
     /// </summary>
     bool IsPlayerInsideTriggerXY(Vector3 playerWorldPosition)
     {
@@ -1060,9 +1104,9 @@ public class SlidingDoorOpener : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Stores the closed positions based on how the door is placed in the scene.
-    /// Input: Current local positions of moving parts.
-    /// Output: Closed-state positions are available for animation.
+    /// Purpose: Saves where the door parts start.
+    /// Input: Current positions of moving parts.
+    /// Output: The script knows the closed door positions.
     /// </summary>
     void CacheClosedPositions()
     {
@@ -1087,9 +1131,9 @@ public class SlidingDoorOpener : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Gives the trigger a sensible default shape when the script is first added.
-    /// Input: Newly added component in the Unity Editor.
-    /// Output: Door root gets a trigger area in front of the door.
+    /// Purpose: Sets a useful default trigger when the script is first added.
+    /// Input: Newly added component in Unity.
+    /// Output: The door gets a trigger area in front of it.
     /// </summary>
     void Reset()
     {
@@ -1100,9 +1144,9 @@ public class SlidingDoorOpener : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Keeps inspector values in a valid range.
+    /// Purpose: Keeps Inspector timing values valid.
     /// Input: Inspector edits.
-    /// Output: Prevents invalid animation timing.
+    /// Output: Durations cannot become invalid.
     /// </summary>
     void OnValidate()
     {

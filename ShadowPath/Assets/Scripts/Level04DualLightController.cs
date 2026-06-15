@@ -1,73 +1,118 @@
 ﻿using UnityEngine;
 
 /// <summary>
-/// Level04-only controller for switching between the left and right gameplay light phases.
-/// It owns the phase input so the shared LightAngleController script can remain unchanged.
+/// Purpose: Controls the two switchable lights in Level 4.
+/// Input: F key, arrow keys, light references, and shadow objects in the scene.
+/// Output: Only the selected light controls the current shadow puzzle objects.
 /// </summary>
 public class Level04DualLightController : MonoBehaviour
 {
     public enum LightPhase
     {
+        // The first light setup, usually one side of the puzzle.
         PhaseA,
+        // The second light setup, usually the other side of the puzzle.
         PhaseB
     }
 
     [Header("Input")]
+    // Key used to switch between the two light phases.
     public KeyCode switchKey = KeyCode.F;
 
     [Header("Phase A")]
+    // Transform of the Phase A directional light; this is what the script rotates.
     public Transform directionalLightA;
+    // Phase A Light component; this is turned on when Phase A is active.
     public Light lightA;
+    // Visible lamp model for Phase A.
     public GameObject stageLampRigA;
+    // Screen/local wash light object for Phase A.
     public GameObject screenWashRigA;
+    // Optional flash effect played when Phase A becomes active.
     public LightUnlockPulse washPulseA;
+    // Old single-light controller; this script disables it so it does not fight the dual-light system.
     public LightAngleController legacyAngleControllerA;
+    // Starting up/down angle for Phase A.
     public float startXAngleA = -15f;
+    // Starting left/right angle for Phase A.
     public float startYAngleA = 10f;
 
     [Header("Phase B")]
+    // Transform of the Phase B directional light; this is what the script rotates.
     public Transform directionalLightB;
+    // Phase B Light component; this is turned on when Phase B is active.
     public Light lightB;
+    // Visible lamp model for Phase B.
     public GameObject stageLampRigB;
+    // Screen/local wash light object for Phase B.
     public GameObject screenWashRigB;
+    // Optional flash effect played when Phase B becomes active.
     public LightUnlockPulse washPulseB;
+    // Old single-light controller; this script disables it so it does not fight the dual-light system.
     public LightAngleController legacyAngleControllerB;
+    // Starting up/down angle for Phase B.
     public float startXAngleB = -15f;
+    // Starting left/right angle for Phase B.
     public float startYAngleB = -10f;
 
     [Header("Rotation")]
+    // How fast the active light rotates when the player presses arrow keys.
     public float rotateSpeed = 25f;
+    // If true, Phase A and Phase B use their own rotation limits.
     public bool useSeparatePhaseAngleLimits = true;
+    // Shared left limit, used only when separate phase limits are turned off.
     public float minYAngle = -30f;
+    // Shared right limit, used only when separate phase limits are turned off.
     public float maxYAngle = 30f;
+    // Shared downward/upward limit, used only when separate phase limits are turned off.
     public float minXAngle = -20f;
+    // Shared downward/upward limit, used only when separate phase limits are turned off.
     public float maxXAngle = 5f;
 
     [Header("Phase A Rotation Limits")]
+    // Furthest left/right value Phase A can rotate to on one side.
     public float minYAngleA = 4f;
+    // Furthest left/right value Phase A can rotate to on the other side.
     public float maxYAngleA = 30f;
+    // Furthest down/up value Phase A can rotate to on one side.
     public float minXAngleA = -20f;
+    // Furthest down/up value Phase A can rotate to on the other side.
     public float maxXAngleA = 5f;
 
     [Header("Phase B Rotation Limits")]
+    // Furthest left/right value Phase B can rotate to on one side.
     public float minYAngleB = -30f;
+    // Furthest left/right value Phase B can rotate to on the other side.
     public float maxYAngleB = -4f;
+    // Furthest down/up value Phase B can rotate to on one side.
     public float minXAngleB = -20f;
+    // Furthest down/up value Phase B can rotate to on the other side.
     public float maxXAngleB = 5f;
 
     [Header("Switch Feedback")]
+    // AudioSource used to play the switching sound.
     public AudioSource switchAudioSource;
+    // Sound played when the player switches light phase.
     public AudioClip switchSound;
+    // Volume of the switching sound.
     [Range(0f, 1f)] public float switchSoundVolume = 0.7f;
+    // If true, the active wash light flashes when switching phase.
     public bool pulseWashLightOnSwitch = true;
+    // If true, both lamp models stay visible even though only one gameplay light is active.
     public bool keepBothStageLampsVisible = true;
 
     [Header("Scene Shadow Users")]
+    // If true, the script finds shadow objects in the scene automatically.
     public bool autoRefreshSceneShadowUsers = true;
+    // If true, the player lets go of any rope before the light phase changes.
     public bool dropAttachedRopesOnLightSwitch = true;
+    // Shadow platform scripts controlled by the active Level 4 light.
     public ProjectedShadowAllEdgePlatform[] allEdgePlatforms;
+    // Shadow collider scripts controlled by the active Level 4 light.
     public ProjectedShadowCollider[] shadowColliders;
+    // Shadow ladder scripts controlled by the active Level 4 light.
     public ShadowLadderClimbZone[] ladderZones;
+    // Shadow rope scripts controlled by the active Level 4 light.
     public ShadowRopeSwingZone[] ropeSwingZones;
 
     private bool usingPhaseB;
@@ -77,9 +122,9 @@ public class Level04DualLightController : MonoBehaviour
     private float currentYAngleB;
 
     /// <summary>
-    /// Purpose: Initializes both independent light phases and applies the starting active phase.
-    /// Input: Serialized phase references, starting angles, and phase-specific angle limits.
-    /// Output: Legacy controllers are disabled, lights are clamped into their own ranges, and shadow users receive the active phase.
+    /// Purpose: Sets up both lights when Level 4 starts.
+    /// Input: Light references and starting angles from the Inspector.
+    /// Output: The correct starting light is active and shadow objects use that light.
     /// </summary>
     private void Awake()
     {
@@ -96,9 +141,9 @@ public class Level04DualLightController : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Handles phase switching and rotation input for the currently active light.
-    /// Input: Player keyboard input for switchKey and arrow-key light adjustment.
-    /// Output: The active light changes or rotates while staying inside that phase's allowed angle range.
+    /// Purpose: Checks player input every frame.
+    /// Input: F key for switching, arrow keys for rotating the active light.
+    /// Output: The selected light can switch or rotate.
     /// </summary>
     private void Update()
     {
@@ -114,9 +159,9 @@ public class Level04DualLightController : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Prevents the copied single-light controllers from fighting Level04's dual-light controller.
-    /// Input: Optional legacy LightAngleController references on A and B lights.
-    /// Output: Legacy angle controllers are disabled for this scene only.
+    /// Purpose: Turns off the old single-light scripts in Level 4.
+    /// Input: Old LightAngleController references, if they exist.
+    /// Output: Only this dual-light script controls the lights.
     /// </summary>
     private void DisableLegacyAngleControllers()
     {
@@ -132,9 +177,9 @@ public class Level04DualLightController : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Applies the current phase to light objects, shadow gameplay users, audio, and visual pulse feedback.
-    /// Input: The stored usingPhaseB state plus feedback flags.
-    /// Output: Only the active gameplay light drives shadow systems, and phase-locked users are enabled or hidden.
+    /// Purpose: Makes the current light phase take effect.
+    /// Input: Which phase is active, plus whether to play sound or flash.
+    /// Output: The right light and matching shadow objects become active.
     /// </summary>
     private void ApplyPhase(bool playFeedback, bool pulse)
     {
@@ -158,9 +203,9 @@ public class Level04DualLightController : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Shows the stage lamp rig while enabling only the active gameplay light and screen wash.
-    /// Input: Stage lamp rig, screen wash rig, directional Light component, and active state.
-    /// Output: Visible lamp props remain in the scene, while gameplay lighting follows the selected phase.
+    /// Purpose: Shows or hides one phase's light objects.
+    /// Input: The lamp model, wash light, real Light component, and whether this phase is active.
+    /// Output: The phase looks correct in the scene and only the active gameplay light is enabled.
     /// </summary>
     private void SetPhaseObjects(GameObject stageLampRig, GameObject screenWashRig, Light directionalLight, bool active)
     {
@@ -181,9 +226,9 @@ public class Level04DualLightController : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Rotates the active phase light from input while preserving independent limits per phase.
-    /// Input: Horizontal and vertical arrow-key input.
-    /// Output: The active phase's stored X/Y angles are updated and clamped.
+    /// Purpose: Rotates the light that is currently selected.
+    /// Input: Arrow key direction.
+    /// Output: The active light angle changes but stays inside its allowed range.
     /// </summary>
     private void UpdateActiveLightAngle()
     {
@@ -212,9 +257,9 @@ public class Level04DualLightController : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Pushes stored phase angles onto the actual Directional Light transforms.
-    /// Input: Current A and B X/Y angle values.
-    /// Output: Both light transforms match their stored phase rotations.
+    /// Purpose: Applies the saved angle numbers to the real light objects.
+    /// Input: Current Phase A and Phase B angle values.
+    /// Output: The two lights rotate to match those values.
     /// </summary>
     private void ApplyLightRotations()
     {
@@ -230,9 +275,9 @@ public class Level04DualLightController : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Reads horizontal light rotation input with the existing control feel.
-    /// Input: LeftArrow and RightArrow key states.
-    /// Output: Signed horizontal input for light yaw adjustment.
+    /// Purpose: Reads left/right light control.
+    /// Input: Left Arrow and Right Arrow keys.
+    /// Output: A simple number saying rotate left, rotate right, or do nothing.
     /// </summary>
     private float GetHorizontalLightInput()
     {
@@ -250,9 +295,9 @@ public class Level04DualLightController : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Reads vertical light rotation input with the existing control feel.
-    /// Input: UpArrow and DownArrow key states.
-    /// Output: Signed vertical input for light pitch adjustment.
+    /// Purpose: Reads up/down light control.
+    /// Input: Up Arrow and Down Arrow keys.
+    /// Output: A simple number saying rotate up, rotate down, or do nothing.
     /// </summary>
     private float GetVerticalLightInput()
     {
@@ -270,9 +315,9 @@ public class Level04DualLightController : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Plays the same switch sound used by the light-opening feedback.
-    /// Input: Optional AudioSource and switch AudioClip references.
-    /// Output: A one-shot switch sound is played if audio references are available.
+    /// Purpose: Plays the phase switch sound once.
+    /// Input: The sound clip and AudioSource from the Inspector.
+    /// Output: The player hears feedback when switching lights.
     /// </summary>
     private void PlaySwitchSound()
     {
@@ -295,9 +340,9 @@ public class Level04DualLightController : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Finds all current scene shadow users so copied or newly added objects participate without manual lists.
-    /// Input: Active scene objects, including inactive shadow helper objects.
-    /// Output: Cached arrays of all Level04-compatible shadow user components.
+    /// Purpose: Finds the shadow objects in the scene.
+    /// Input: All scene objects, including inactive helper objects.
+    /// Output: The script has lists of platforms, colliders, ladders, and ropes to control.
     /// </summary>
     private void RefreshSceneShadowUsers()
     {
@@ -313,9 +358,9 @@ public class Level04DualLightController : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Drops the player from any rope before the rope shadow snaps to the other phase.
-    /// Input: Cached ShadowRopeSwingZone instances.
-    /// Output: Attached ropes release the player cleanly before the phase swap.
+    /// Purpose: Makes the player let go of a rope before switching lights.
+    /// Input: The rope scripts found in the scene.
+    /// Output: The player does not stay attached to a rope that may disappear.
     /// </summary>
     private void DropAttachedRopesBeforeLightSwitch()
     {
@@ -334,9 +379,9 @@ public class Level04DualLightController : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Assigns the active gameplay light only to shadow users allowed in the current phase.
-    /// Input: Active phase, cached shadow user arrays, and optional Level04LightPhaseBinding components.
-    /// Output: Allowed users rebuild from the active light, while disallowed users hide or disable their colliders.
+    /// Purpose: Gives the active light to the shadow gameplay objects.
+    /// Input: Current phase and the lists of shadow objects.
+    /// Output: Only objects allowed in this phase make usable shadows.
     /// </summary>
     private void ApplyActiveGameplayLightToShadowUsers()
     {
@@ -408,9 +453,9 @@ public class Level04DualLightController : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Clamps both stored phase angles after loading serialized scene values.
-    /// Input: Current stored A and B light angles.
-    /// Output: Stored angles are guaranteed to fit their configured phase limits.
+    /// Purpose: Fixes both starting light angles if they are outside the allowed range.
+    /// Input: Saved Phase A and Phase B angles.
+    /// Output: Both angles are kept inside their limits.
     /// </summary>
     private void ClampStoredLightAngles()
     {
@@ -419,9 +464,9 @@ public class Level04DualLightController : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Clamps one phase's pitch and yaw using either separate or legacy shared limits.
-    /// Input: Angle references and the phase that owns those angles.
-    /// Output: The supplied X/Y values are clamped in place.
+    /// Purpose: Keeps one light's angle inside its allowed range.
+    /// Input: One light's up/down and left/right angle values.
+    /// Output: Any too-large or too-small angle is pulled back into the allowed range.
     /// </summary>
     private void ClampLightAngles(ref float xAngle, ref float yAngle, LightPhase phase)
     {
@@ -431,9 +476,9 @@ public class Level04DualLightController : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Resolves the correct pitch and yaw range for the requested phase.
+    /// Purpose: Chooses which angle limits should be used.
     /// Input: Phase A or Phase B.
-    /// Output: Min/max pitch and yaw limits for that phase.
+    /// Output: The correct min/max values for that phase.
     /// </summary>
     private void GetAngleLimits(LightPhase phase, out float minX, out float maxX, out float minY, out float maxY)
     {
@@ -462,9 +507,9 @@ public class Level04DualLightController : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Checks whether a shadow user is allowed to operate in the active phase.
-    /// Input: A shadow user component and the active light phase.
-    /// Output: True when no binding exists or when the nearest binding allows that phase.
+    /// Purpose: Checks whether one shadow object belongs to the current phase.
+    /// Input: The shadow object and the current light phase.
+    /// Output: True means this object can be used now.
     /// </summary>
     private bool IsShadowUserAllowed(Component shadowUser, LightPhase activePhase)
     {
@@ -488,9 +533,9 @@ public class Level04DualLightController : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Enables or disables colliders attached to a phase-locked shadow user.
-    /// Input: Component owning possible collider components and the desired collision state.
-    /// Output: Local Collider components match the requested enabled state.
+    /// Purpose: Turns collision on or off for one shadow object.
+    /// Input: The object that owns colliders, and whether collision should be enabled.
+    /// Output: Its colliders match the current phase state.
     /// </summary>
     private void SetColliderEnabled(Component owner, bool enabledState)
     {
