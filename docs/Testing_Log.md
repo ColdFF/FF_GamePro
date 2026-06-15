@@ -578,3 +578,29 @@ Each test entry should include:
 | Actual result | The transition overlay now blocks raycasts, selected UI state is cleared when the transition starts, and menu hover feedback is suppressed while the chapter transition is playing. Moving the cursor during the subtitle transition no longer triggers hidden button hover sounds. |
 | Status | Fixed |
 
+### 2026-06-15 - Main Menu Exit Button Retest
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Main menu `EXIT` button behaviour |
+| Expected result | Selecting `EXIT` from the main menu should call the game's quit flow instead of acting only as a visual button. In the Unity Editor, the action should be testable without closing the editor unexpectedly, while in a built version it should quit the application. |
+| Actual result | The `EXIT` button is now connected to the existing main menu navigation quit method. The quit path logs the editor-safe behaviour during Play Mode and calls the application quit flow for builds, so the button now has real functionality instead of being decorative. |
+| Status | Fixed |
+
+### 2026-06-15 - Level 04 Final Storyline Flow Test
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Final message shown after completing `Level04_DualLight` |
+| Expected result | After finishing Level 04, the game should not jump straight to the `LEVEL COMPLETE` choice menu. It should first show a short final storyline message in the same subtitle-style presentation as the earlier chapter transitions, then reveal the normal completion options. |
+| Actual result | Level 04 now plays a final ShadowPath completion message before enabling the existing level-complete UI. The storyline text uses its own scale handling so it stays visually consistent with previous transition text without shrinking the `LEVEL COMPLETE` menu. |
+| Status | Pass |
+
+### 2026-06-15 - Level 04 Instruction and Pause UI Retest
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | `Level04_DualLight` tutorial popup, pause button, and instruction shortcut icons |
+| Expected result | Level 04 should match the earlier levels by showing an instruction popup for the new dual-light switching mechanic, giving the player access to pause, and allowing the instruction popup to be reopened from the top-left UI. |
+| Actual result | Level 04 now includes the same instruction/pause UI structure as the previous levels. The second instruction page explains pressing `F` to switch the light and combining both shadow paths to move forward, while the pause and instruction shortcut controls are available after the opening popup flow. |
+| Status | Fixed |
