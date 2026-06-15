@@ -150,12 +150,6 @@ This repository is maintained as evidence of:
 
 External assets are recorded in [docs/Asset_Credits.md](docs/Asset_Credits.md), including source page, creator, licence, access date, intended use, and any edits made.
 
-## License
-
-The original source code and project documentation authored for this repository are available under the [MIT License](LICENSE).
-
-Third-party assets, audio, fonts, images, and other externally sourced materials are not relicensed by this repository. They remain under their original licences and are documented in [docs/Asset_Credits.md](docs/Asset_Credits.md).
-
 ## Build Information
 
 The game is developed using:
@@ -164,3 +158,10 @@ The game is developed using:
 - 3D Built-in Render Pipeline
 - Target platform: Windows
 - Current run path: Unity Editor through `Assets/Scenes/MainMenu.unity`
+
+## License
+
+The original source code and project documentation authored for this repository are available under the [MIT License](LICENSE).
+
+Third-party assets, audio, fonts, images, and other externally sourced materials are not relicensed by this repository. They remain under their original licences and are documented in [docs/Asset_Credits.md](docs/Asset_Credits.md).
+
