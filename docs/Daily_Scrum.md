@@ -177,3 +177,11 @@ Each entry should briefly answer:
 | What was completed? | Polished the main menu instructions flow by adding a two-page `HOW TO PLAY` popup with Goal/Core Mechanic content on the first page and Controls on the second page. Refined button behaviour so menu, instruction, and level-complete buttons reset after hover/click instead of staying visually selected. Added UI hover and click-confirm sound effects, restyled the level-complete buttons back toward the project's black/white menu language, and fixed hidden button hover sounds during chapter subtitle transitions. The project update was committed and pushed through the project polish branch. |
 | What will be worked on next? | Update the documentation branch with the new UI audio credits, Daily Scrum notes, and Testing Log evidence. After that, continue final regression testing across the main menu, level transitions, and level-complete screens before final submission. |
 | Blockers, risks, or problems | UI polish touches shared menu scripts and transition flow, so it needs careful regression testing to ensure audio feedback does not trigger from inactive or hidden UI. Generated and processed UI audio also needs accurate asset-credit documentation. |
+
+### 2026-06-15 - Final UI Flow and Repository Sync
+
+| Question | Notes |
+| --- | --- |
+| What was completed? | Polished the final UI flow by connecting the main menu `EXIT` button, adding the Level 04 ending storyline before the completion menu, and restoring Level 04 instruction/pause UI. The repository project copy was also synced with the latest local Unity project, including the `Support_UI_Transition` script reorganisation and removal of obsolete scripts. |
+| What will be worked on next? | Finish updating the remaining documentation, push the docs update, and do a final playthrough check from the main menu through all four levels. |
+| Blockers, risks, or problems | The project sync touched several Unity scenes and moved/deleted scripts, so the final submission check should still watch for stale files, duplicate classes, and unwanted Unity-generated changes. |
