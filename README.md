@@ -159,6 +159,13 @@ The game is developed using:
 - Target platform: Windows
 - Current run path: Unity Editor through `Assets/Scenes/MainMenu.unity`
 
+A packaged Windows build is available from the GitHub Releases page:
+
+- [ShadowPath v1.0.0](https://github.com/ColdFF/FF_GamePro/releases/tag/v1.0.0)
+- Release asset: `ShadowPath_Windows_v1.0.0.zip`
+
+To run the release build, download and extract the zip file, then launch the ShadowPath executable inside the extracted folder.
+
 ## License
 
 The original source code and project documentation authored for this repository are available under the [MIT License](LICENSE).
