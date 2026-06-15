@@ -3,88 +3,126 @@ using UnityEngine;
 using UnityEngine.Rendering;
 
 /// <summary>
-/// Purpose: Generates collider strips from projected shadow edges and separates walkable edges from steep sliding edges.
-/// Input: A shadow caster MeshRenderer, a shadow screen Transform, a Directional Light, and tuning values.
-/// Output: Runtime BoxCollider edge strips that follow shadow edges; walkable edges can carry the player, steep edges only slide/block.
+/// Purpose: Turns the visible edge of a shadow into real Unity colliders.
+/// Input: The object casting the shadow, the screen/wall receiving it, and the light direction.
+/// Output: The player can stand on useful shadow edges, while steep edges work like walls.
 /// </summary>
 [DefaultExecutionOrder(-50)]
 public class ProjectedShadowAllEdgePlatform : MonoBehaviour
 {
     [Header("Scene References")]
+    // The object whose shadow should become playable.
     public MeshRenderer shadowCasterRenderer;
+    // The wall/screen where the shadow appears.
     public Transform shadowScreen;
+    // The light that decides where the shadow is projected.
     public Light directionalLight;
 
     [Header("Walkable Edge Shape")]
+    // Thickness of each generated shadow platform strip.
     public float platformThickness = 0.08f;
+    // Depth of the generated collider, so the player can collide with it in 3D space.
     public float platformDepth = 8f;
+    // Extra length added to both ends of each edge to avoid tiny gaps.
     public float edgePadding = 0.04f;
+    // Small offset from the screen so the collider does not visually overlap the wall.
     public float surfaceOffset = -0.02f;
+    // Very short shadow edges below this length are ignored.
     public float minEdgeLength = 0.001f;
 
+    // How upward-facing an edge must be before the player can stand on it.
     [Range(0f, 1f)]
     public float minWalkableNormalY = 0.65f;
 
     [Header("Curved Caster Sampling")]
+    // If true, round objects get extra sample points so their shadows are smoother.
     public bool addCurvedCasterSamples = true;
 
+    // Number of extra points used around a round object.
     [Min(8)]
     public int curvedCasterSampleCount = 48;
 
+    // How close the object's X/Z size must be before it is treated as round.
     [Range(0f, 1f)]
     public float curvedCasterRadiusTolerance = 0.18f;
 
+    // Extra padding for curved shadow edges to avoid small cracks.
     [Min(0f)]
     public float curvedEdgeExtraPadding = 0.02f;
 
+    // If true, adds a more stable top support edge for round shadows.
     public bool addCurvedTopSupport = true;
 
+    // Thickness used for the extra top support on curved shadows.
     [Min(0.01f)]
     public float curvedTopSupportThickness = 0.04f;
 
+    // Extra length for the curved top support.
     [Min(0f)]
     public float curvedTopSupportPadding = 0.035f;
 
+    // How close an edge must be to the top of the shadow before it counts as top support.
     [Min(0f)]
     public float curvedTopEnvelopeTolerance = 0.06f;
 
+    // How upward-facing the original surface should be before curved top support is allowed.
     [Range(0f, 1f)]
     public float curvedTopSupportMinSourceNormalY = 0.25f;
 
     [Header("Edge Selection Debug")]
+    // If true, creates all shadow edges so you can see/debug them; if false, only useful walkable edges are made.
     public bool buildAllEdgesForDebug = true;
+    // If true, only the highest/top shadow edges can be walkable.
     public bool walkableEdgesMustBeUpperEnvelope = false;
+    // Reverses the walkable side if the generated edge direction is wrong.
     public bool flipWalkableNormal = false;
+    // If true, the script tries the opposite side when an edge points downward.
     public bool useOppositeNormalFallback = true;
 
     [Header("Update")]
+    // If true, rebuilds the shadow colliders while the light or object moves.
     public bool rebuildEveryFrame = true;
 
     [Header("Generated Collider Settings")]
+    // Layer name assigned to generated shadow colliders.
     public string groundLayerName = "Ground";
+    // If true, adds a kinematic Rigidbody so generated colliders behave correctly in physics.
     public bool addKinematicRigidbody = true;
+    // Physics material used on walkable shadow edges.
     public PhysicMaterial platformPhysicsMaterial;
+    // Physics material used on steep shadow edges.
     public PhysicMaterial steepEdgePhysicsMaterial;
 
     [Header("Passenger Carry")]
+    // If true, moving shadows can carry the player standing on them.
     public bool carryPlayerWithShadow = true;
+    // Tag used to find the player object.
     public string playerTag = "Player";
+    // How close the player must be to a shadow edge to count as standing on it.
     public float passengerContactTolerance = 0.35f;
+    // If the player is moving upward faster than this, the shadow will not carry them.
     public float maxPassengerUpwardSpeed = 1f;
+    // Tiny shadow movements below this are ignored.
     public float minCarryDistancePerStep = 0.005f;
+    // Shadow movements above this are considered too large to safely carry the player.
     public float maxCarryDistancePerStep = 0.25f;
+    // Maximum distance allowed when matching an old shadow edge to the new one.
     public float maxEdgeMatchDistance = 1.2f;
+    // How similar the old and new edge direction must be before the player can be carried.
     [Range(0f, 1f)]
     public float minCarryEdgeDirectionDot = 0.75f;
 
+    // Extra direction check for edge matching; lower is more forgiving.
     [Range(-1f, 1f)]
     public float minEdgeDirectionDot = 0f;
 
     [Header("Debug Visual")]
+    // If true, generated shadow collider strips are visible in the Scene/Game view.
     public bool showDebugSurface = true;
+    // Material used to draw the debug shadow collider strips.
     public Material debugMaterial;
 
-    [Header("Read Only Diagnostics")]
+    [Header("Read Only Status")]
     [SerializeField] private int lastProjectedPointCount;
     [SerializeField] private int lastHullPointCount;
     [SerializeField] private int lastGeneratedEdgeCount;
@@ -109,16 +147,21 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
 
     private struct EdgeSnapshot
     {
+        // Which generated collider object this edge belongs to.
         public int generatedIndex;
+        // Which original shadow outline edge this came from.
         public int edgeId;
+        // Start point of the edge in the Unity scene.
         public Vector3 worldStart;
+        // End point of the edge in the Unity scene.
         public Vector3 worldEnd;
+        // True means the player is allowed to stand on this edge.
         public bool isWalkable;
 
         /// <summary>
-        /// Purpose: Stores one projected shadow edge for matching between physics frames.
-        /// Input: Generated object index, source hull edge id, world-space endpoints, and walkable state.
-        /// Output: An immutable edge snapshot used by player carrying logic.
+        /// Purpose: Saves one shadow edge so the script can compare it with the next frame.
+        /// Input: Edge index, edge start/end points, and whether the player can stand on it.
+        /// Output: Player-carrying code can tell how the shadow moved.
         /// </summary>
         public EdgeSnapshot(
             int generatedIndex,
@@ -137,9 +180,9 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Repairs serialized defaults for curved-caster fields added after existing scene instances were created.
-    /// Input: Current serialized values on this component.
-    /// Output: Curved support starts enabled with safe values unless the scene has explicit non-default tuning.
+    /// Purpose: Fixes older scene values before gameplay starts.
+    /// Input: Current Inspector values.
+    /// Output: Curved shadow settings have safe default values.
     /// </summary>
     private void Awake()
     {
@@ -147,9 +190,9 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Repairs newly added curved-caster defaults while editing older scene instances.
-    /// Input: Inspector value changes and script recompiles.
-    /// Output: Existing Level02 instances pick up safe curved-shadow defaults without manual scene rewiring.
+    /// Purpose: Keeps Inspector values valid while editing.
+    /// Input: Changed Inspector values or script reloads.
+    /// Output: Curved shadow settings do not accidentally become zero.
     /// </summary>
     private void OnValidate()
     {
@@ -157,9 +200,9 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Builds the first set of generated shadow edge colliders.
-    /// Input: Current scene references and inspector tuning values.
-    /// Output: Generated edge colliders are created before gameplay interaction begins.
+    /// Purpose: Builds the first shadow colliders when the level starts.
+    /// Input: Scene references and Inspector settings.
+    /// Output: Shadow edge colliders exist before the player uses them.
     /// </summary>
     private void Start()
     {
@@ -167,9 +210,9 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Keeps generated edge colliders aligned with changing shadows during physics updates.
-    /// Input: Current light angle, caster transform, and previous edge snapshots.
-    /// Output: Edge colliders update and the player is carried when standing on a matching walkable edge.
+    /// Purpose: Updates shadow colliders during physics.
+    /// Input: Current light/object position and the previous shadow edge positions.
+    /// Output: Colliders follow the shadow, and moving shadows can carry the player.
     /// </summary>
     private void FixedUpdate()
     {
@@ -180,9 +223,9 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Recalculates the projected shadow hull and refreshes generated edge colliders.
-    /// Input: Shadow caster mesh vertices, light direction, and shadow screen plane.
-    /// Output: Current edge colliders, diagnostics, and previous edge snapshots are updated.
+    /// Purpose: Rebuilds the playable shadow edges.
+    /// Input: The caster mesh, light direction, and shadow screen.
+    /// Output: New BoxColliders are placed along the current shadow outline.
     /// </summary>
     public void Rebuild()
     {
@@ -251,9 +294,9 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Validates that projection can be calculated.
-    /// Input: Shadow caster renderer, shadow screen, and directional light references.
-    /// Output: True if all required references exist; otherwise false with a diagnostic message.
+    /// Purpose: Checks that the important scene references are assigned.
+    /// Input: Caster object, shadow screen, and light fields.
+    /// Output: True means the script has enough information to build a shadow.
     /// </summary>
     private bool HasRequiredReferences()
     {
@@ -279,9 +322,9 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Projects each caster mesh vertex and optional curved-surface samples onto the shadow screen plane.
-    /// Input: Caster mesh vertices, optional analytic round-caster samples, caster transform, directional light direction, and shadow screen plane.
-    /// Output: Projected points in shadow screen local XY space.
+    /// Purpose: Gets the shadow points on the screen.
+    /// Input: Mesh points from the caster object and the current light direction.
+    /// Output: 2D points showing where the shadow lands on the screen.
     /// </summary>
     private List<Vector2> GetProjectedPointsOnScreen()
     {
@@ -314,9 +357,9 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Adds one projected world point to the current screen-local point list.
-    /// Input: A world-space caster point, the shadow screen plane, and light direction.
-    /// Output: Projected 2D screen-local point is appended when the projection is valid.
+    /// Purpose: Projects one point from the object onto the shadow screen.
+    /// Input: One world point, the screen plane, and the light direction.
+    /// Output: One 2D shadow point is added if it reaches the screen.
     /// </summary>
     private void AddProjectedPoint(
         Vector3 worldPoint,
@@ -338,9 +381,9 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Adds extra projection samples for round casters whose true silhouette can pass between low-poly mesh vertices.
-    /// Input: Caster mesh bounds, shadow screen plane, and light direction.
-    /// Output: Additional circular-ring samples make cylinder shadows generate continuous walkable edge strips.
+    /// Purpose: Adds extra points for round objects.
+    /// Input: The caster mesh size, the screen, and the light direction.
+    /// Output: Round shadows become smoother and less broken.
     /// </summary>
     private void AddCurvedCasterProjectionSamples(
         Mesh casterMesh,
@@ -390,9 +433,9 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Detects whether the caster should receive extra circular silhouette samples.
-    /// Input: Mesh name, vertex count, and local bounds.
-    /// Output: True for cylinder-like meshes, false for ordinary box/platform meshes.
+    /// Purpose: Decides if this object looks round enough to need extra points.
+    /// Input: Mesh name, vertex count, and object size.
+    /// Output: True means treat it like a cylinder/capsule shadow.
     /// </summary>
     private bool ShouldAddCurvedCasterSamples(Mesh casterMesh)
     {
@@ -429,9 +472,9 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Samples one local-space circular ring on a cylinder-like caster.
-    /// Input: Ring center, local Y height, radii, sample count, shadow screen plane, and light direction.
-    /// Output: Projected ring points are appended to the projection point list.
+    /// Purpose: Adds points around one circular slice of a round object.
+    /// Input: Circle position, circle size, sample count, screen, and light direction.
+    /// Output: More shadow points are added around the round shape.
     /// </summary>
     private void AddCurvedCasterRingSamples(
         Vector3 center,
@@ -460,9 +503,9 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Builds a convex hull around projected shadow points.
-    /// Input: Projected screen-local 2D points.
-    /// Output: Ordered convex hull points around the projected shadow silhouette.
+    /// Purpose: Builds the outside outline of the shadow.
+    /// Input: All 2D shadow points.
+    /// Output: Ordered points around the edge of the shadow shape.
     /// </summary>
     private List<Vector2> BuildConvexHull(List<Vector2> points)
     {
@@ -513,9 +556,9 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Removes repeated projected points before hull generation.
-    /// Input: Sorted projected points.
-    /// Output: Unique points that keep hull construction stable for dense curved sampling.
+    /// Purpose: Removes duplicate points before building the outline.
+    /// Input: Sorted shadow points.
+    /// Output: A cleaner point list with repeats removed.
     /// </summary>
     private List<Vector2> RemoveDuplicatePoints(List<Vector2> sortedPoints)
     {
@@ -541,9 +584,9 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Calculates signed 2D turn direction for hull construction.
-    /// Input: Origin point, first point, and second point.
-    /// Output: Positive, negative, or zero cross-product value.
+    /// Purpose: Checks which way three points turn.
+    /// Input: Three 2D points.
+    /// Output: A number used to build the outside outline correctly.
     /// </summary>
     private float Cross(Vector2 origin, Vector2 a, Vector2 b)
     {
@@ -552,9 +595,9 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Converts hull edges into collider strips and classifies each edge as walkable or steep.
-    /// Input: Ordered hull points in shadow screen local XY space and the first generated edge index.
-    /// Output: Next free generated edge index after all regular hull edge strips.
+    /// Purpose: Turns the shadow outline into separate edge colliders.
+    /// Input: Ordered shadow outline points.
+    /// Output: Collider strips are created, and each one is marked walkable or steep.
     /// </summary>
     private int BuildEdgesFromHull(List<Vector2> hull, int generatedIndex)
     {
@@ -644,9 +687,9 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Checks whether a hull edge lies on the upper visible silhouette rather than on the side or bottom.
-    /// Input: Full hull and one candidate local edge.
-    /// Output: True when the edge should receive curved walkable support.
+    /// Purpose: Checks if one edge is on the top of the shadow.
+    /// Input: The whole shadow outline and one edge.
+    /// Output: True means this edge can be used as extra top support.
     /// </summary>
     private bool IsUpperEnvelopeEdge(List<Vector2> hull, Vector2 localStart, Vector2 localEnd)
     {
@@ -668,9 +711,9 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Finds the highest point where a vertical screen-space line intersects the hull.
-    /// Input: Hull outline and a screen-local X coordinate.
-    /// Output: Top Y coordinate at that X if the hull crosses the line.
+    /// Purpose: Finds the top of the shadow at one horizontal position.
+    /// Input: Shadow outline and an X position on the screen.
+    /// Output: The highest Y position of the shadow there.
     /// </summary>
     private bool TryGetTopYAtX(List<Vector2> hull, float x, out float topY)
     {
@@ -717,9 +760,9 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Converts one local hull edge into world-space edge data.
-    /// Input: Local start and end points on the shadow screen.
-    /// Output: World endpoints, upward-facing edge normal, and world edge length.
+    /// Purpose: Converts one screen edge into real Unity scene positions.
+    /// Input: Start and end points on the shadow screen.
+    /// Output: Real start/end positions, edge direction, and edge length.
     /// </summary>
     private bool TryBuildWorldEdgeGeometry(
         Vector2 localStart,
@@ -771,9 +814,9 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Creates or updates one generated edge collider object.
-    /// Input: Generated object index, source edge id, world endpoints, world normal, world length, and walkable state.
-    /// Output: A positioned BoxCollider strip with the correct material, layer, visual, and edge snapshot.
+    /// Purpose: Creates or updates one normal shadow edge collider.
+    /// Input: Edge index, start/end positions, edge direction, length, and walkable state.
+    /// Output: One BoxCollider strip is placed on that shadow edge.
     /// </summary>
     private void CreateOrUpdateEdge(
         int generatedIndex,
@@ -800,9 +843,9 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Creates or updates one generated edge collider object with optional curved-support overrides.
-    /// Input: Generated object index, source edge id, world endpoints, world normal, world length, walkable state, optional name prefix, thickness, and padding.
-    /// Output: A positioned BoxCollider strip with the correct material, layer, visual, and edge snapshot.
+    /// Purpose: Creates or updates one shadow edge collider with optional custom size.
+    /// Input: Edge position, edge size, walkable state, and optional curved-edge settings.
+    /// Output: One generated GameObject becomes a usable shadow collider.
     /// </summary>
     private void CreateOrUpdateEdge(
         int generatedIndex,
@@ -912,9 +955,9 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Gives densely sampled curved edges a little more overlap so tiny segment joints do not create foot gaps.
-    /// Input: Base edge padding and whether curved samples were used for this rebuild.
-    /// Output: Effective padding applied to generated edge colliders.
+    /// Purpose: Chooses how much extra length to add to each edge.
+    /// Input: Normal padding and whether this shadow came from a curved object.
+    /// Output: A padding value that helps avoid tiny gaps.
     /// </summary>
     private float GetEffectiveEdgePadding()
     {
@@ -927,9 +970,9 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Normalizes curved-caster settings when older scene instances deserialize newly added fields as zero values.
-    /// Input: Current curved-caster configuration.
-    /// Output: Safe runtime defaults for curved sampling and top support.
+    /// Purpose: Fixes curved-shadow settings if older scene data left them empty.
+    /// Input: Current curved-shadow settings.
+    /// Output: Safe values are filled in automatically.
     /// </summary>
     private void NormalizeCurvedCasterDefaults()
     {
@@ -992,6 +1035,11 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Purpose: Gets the parent object that stores generated shadow edge objects.
+    /// Input: Existing generated edge root, if it already exists.
+    /// Output: A Transform used as the parent for generated edge colliders.
+    /// </summary>
     private Transform GetOrCreateGeneratedEdgeRoot()
     {
         if (generatedEdgeRoot != null)
@@ -1007,9 +1055,9 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Gets or creates a reusable generated edge GameObject.
-    /// Input: Generated edge object index.
-    /// Output: Child cube GameObject used as a visual and BoxCollider platform strip.
+    /// Purpose: Gets one reusable generated edge object.
+    /// Input: The edge object number needed.
+    /// Output: A cube object that can be resized into a shadow collider.
     /// </summary>
     private GameObject GetOrCreateGeneratedEdge(int index)
     {
@@ -1025,9 +1073,9 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Hides generated edge objects that are not used by the current hull.
-    /// Input: Number of generated edges that should remain active.
-    /// Output: Extra generated edge objects are deactivated.
+    /// Purpose: Hides old shadow edge objects that are not needed now.
+    /// Input: Number of edges used by the current shadow.
+    /// Output: Extra generated objects are turned off.
     /// </summary>
     private void HideUnusedEdges(int activeCount)
     {
@@ -1041,9 +1089,9 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Carries the player only when they are currently grounded on this controller's walkable generated edge.
-    /// Input: Player ground collider, previous edge snapshots, and current edge snapshots.
-    /// Output: Player Rigidbody is moved by the matched edge delta, or no movement is applied.
+    /// Purpose: Moves the player along with a moving shadow platform.
+    /// Input: Player's current ground and old/new shadow edge positions.
+    /// Output: The player is shifted by the same movement as the shadow edge.
     /// </summary>
     private void CarryPlayerWithShadowEdges()
     {
@@ -1122,9 +1170,9 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Finds and caches player components by tag.
-    /// Input: Configured playerTag.
-    /// Output: Cached Rigidbody, Collider, and PlayerController references.
+    /// Purpose: Finds the player and remembers the useful player components.
+    /// Input: The player tag.
+    /// Output: Rigidbody, Collider, and PlayerController references are cached.
     /// </summary>
     private void CachePlayer()
     {
@@ -1146,9 +1194,9 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Checks whether the player is currently grounded on one of this controller's walkable generated colliders.
-    /// Input: PlayerController grounded state and current ground collider.
-    /// Output: Generated edge index if the current ground belongs to this controller and is walkable.
+    /// Purpose: Checks if the player is standing on one of this script's walkable shadow edges.
+    /// Input: Player grounded state and current ground collider.
+    /// Output: The edge number if the player is on a valid shadow edge.
     /// </summary>
     private bool TryGetCurrentGroundGeneratedIndex(out int generatedIndex)
     {
@@ -1180,9 +1228,9 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Finds the previous edge that corresponds to the player's current grounded generated edge.
-    /// Input: Player foot world position, required generated index, and previous edge snapshots.
-    /// Output: Supporting previous edge and normalized amount along it.
+    /// Purpose: Finds the old shadow edge that supported the player before the rebuild.
+    /// Input: Player foot position and the previous edge list.
+    /// Output: The old support edge and where the player was on it.
     /// </summary>
     private bool TryFindSupportingPreviousEdge(
         Vector3 footWorld,
@@ -1240,9 +1288,9 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Finds the current matching walkable edge for the previous support edge.
-    /// Input: Previous edge, previous anchor point, previous normalized edge amount, and current edge snapshots.
-    /// Output: Matching current edge and normalized amount if a safe match is found.
+    /// Purpose: Finds the new edge that matches the old edge the player stood on.
+    /// Input: Old edge, old player position on that edge, and current edge list.
+    /// Output: Matching new edge if it is close and points the same way.
     /// </summary>
     private bool TryFindMatchingNextEdge(
         EdgeSnapshot previousEdge,
@@ -1335,9 +1383,9 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Gets the midpoint of an edge snapshot.
-    /// Input: Edge snapshot with world endpoints.
-    /// Output: World-space midpoint.
+    /// Purpose: Finds the middle point of one edge.
+    /// Input: Edge start and end positions.
+    /// Output: The middle position.
     /// </summary>
     private Vector3 GetEdgeMidpoint(EdgeSnapshot edge)
     {
@@ -1345,9 +1393,9 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Gets the normalized direction of an edge snapshot.
-    /// Input: Edge snapshot with world endpoints.
-    /// Output: Normalized direction from start to end.
+    /// Purpose: Finds which direction one edge points.
+    /// Input: Edge start and end positions.
+    /// Output: A direction from start to end.
     /// </summary>
     private Vector3 GetEdgeDirection(EdgeSnapshot edge)
     {
@@ -1362,9 +1410,9 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Converts a world point into 2D coordinates on the shadow screen axes.
-    /// Input: A world-space point.
-    /// Output: 2D coordinate using shadow screen right and up directions.
+    /// Purpose: Converts a real Unity position into a 2D screen position.
+    /// Input: A world position.
+    /// Output: X/Y coordinates on the shadow screen.
     /// </summary>
     private Vector2 GetScreenWorld2D(Vector3 worldPoint)
     {
@@ -1377,9 +1425,9 @@ public class ProjectedShadowAllEdgePlatform : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Stores current edge snapshots for use during the next physics update.
-    /// Input: nextEdges from the current rebuild.
-    /// Output: previousEdges is refreshed with the latest edge data.
+    /// Purpose: Saves the current shadow edges for the next frame.
+    /// Input: The edge list just built.
+    /// Output: Next frame can compare old and new edge positions.
     /// </summary>
     private void StoreCurrentEdges()
     {

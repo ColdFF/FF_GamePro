@@ -1,132 +1,233 @@
 using UnityEngine;
 
 /// <summary>
-/// Creates a grab trigger from a rope's projected shadow and controls a simple pendulum swing while the player is attached.
+/// Purpose: Lets the player grab and swing from a rope shadow.
+/// Input: Rope endpoints, shadow screen, light direction, player input, and swing settings.
+/// Output: The player attaches to the projected rope, swings, and releases with momentum.
 /// </summary>
 [ExecuteAlways]
 [RequireComponent(typeof(BoxCollider))]
 public class ShadowRopeSwingZone : MonoBehaviour
 {
     [Header("Projection References")]
+    // Real rope start point in the scene.
     public Transform ropeStart;
+    // Real rope end point in the scene.
     public Transform ropeEnd;
+    // Wall/screen where the rope shadow appears.
     public Transform shadowScreen;
+    // Light that projects the rope shadow.
     public Light directionalLight;
 
     [Header("Grab Zone")]
+    // Tag used to recognise the player.
     public string playerTag = "Player";
+    // Width of the trigger area around the rope shadow.
     public float grabWidth = 0.45f;
+    // Depth of the trigger area in 3D space.
     public float triggerDepth = 8f;
+    // Small offset from the shadow screen to avoid overlap.
     public float shadowSurfaceOffset = -0.02f;
+    // If true, the player can grab the rope automatically on entering the trigger.
     public bool autoGrabOnEnter = false;
 
     [Header("Player Hand Grab")]
+    // Player root object used for moving the character while swinging.
     public Transform playerRoot;
+    // Optional hand point used to check if the hand is close enough to the rope.
     public Transform playerHandPoint;
+    // Backup hand position if no hand point is assigned.
     public Vector3 fallbackHandLocalOffset = new Vector3(0.22f, 0.65f, 0f);
+    // Maximum distance from the hand to the rope before grabbing is allowed.
     public float handGrabDistance = 0.38f;
+    // If true, grabbing checks hand distance instead of only trigger contact.
     public bool useHandDistanceGrab = true;
+    // If true, player visual turns toward the rope when attaching.
     public bool faceRopeOnAttach = true;
+    // If true, auto-grab only happens while the player is not grounded.
     public bool autoGrabOnlyWhenAirborne = true;
+    // Short delay after release before auto-grab can happen again.
     public float releaseAutoGrabCooldown = 0.25f;
 
     [Header("Rope End Attachment")]
+    // If true, the player's hand attaches to the projected rope end.
     public bool attachHandToProjectedRopeEnd = true;
+    // If true, the visible rope end follows the swing motion.
     public bool driveRopeEndWhileSwinging = true;
+    // Time used to smoothly snap the hand onto the rope.
     public float attachSnapDuration = 0.12f;
+    // If true, the rope keeps moving after the player releases it.
     public bool keepRopeSwingingAfterRelease = true;
+    // Angle close enough to rest for the rope to stop settling.
     public float settleAngleTolerance = 1f;
+    // Swing speed low enough for the rope to stop settling.
     public float settleAngularSpeedTolerance = 0.08f;
 
     [Header("Hand Pinning")]
+    // If true, the hand is corrected again in LateUpdate after animation updates.
     public bool pinHandInLateUpdate = true;
+    // Small world offset for fine-tuning the hand attach position.
     public Vector3 handAttachmentWorldOffset = Vector3.zero;
 
     [Header("Wall Slide Pose")]
+    // Sprite frames used while the player is attached to the rope.
     public Sprite[] swingPoseSprites;
+    // How fast the swing pose sprite frames change.
     public float swingPoseFrameRate = 6f;
+    // If true, the Animator is disabled while using manual swing sprites.
     public bool disableAnimatorForSwingPose = true;
+    // If true, input can flip the swing pose left/right.
     public bool flipSwingPoseWithInput = true;
+    // If true, the swing pose sprite originally faces right.
     public bool swingPoseFacesRightByDefault = false;
+    // If true, facing direction becomes fixed when the rope is nearly still.
     public bool lockFacingWhenSwingSettled = true;
+    // Facing direction used when the rope is settled.
     public bool settledFacingRight = true;
+    // Angle range where the rope counts as settled for facing.
     public float settledFacingAngleRange = 8f;
+    // Swing speed below this counts as settled for facing.
     public float settledFacingAngularSpeed = 0.25f;
+    // Input must be stronger than this before facing can change.
     public float facingInputThreshold = 0.15f;
+    // Swing speed must be stronger than this before motion can change facing.
     public float facingAngularSpeedThreshold = 0.45f;
+    // Delay between facing-direction changes.
     public float facingSwitchCooldown = 0.12f;
 
     [Header("Swing Motion")]
+    // Strength of gravity used for the rope swing.
     public float gravity = 13f;
+    // How strongly A/D input pushes the swing.
     public float inputAngularAcceleration = 3.5f;
+    // Overall strength of swing input.
     [Range(0.1f, 1f)] public float swingInputSensitivity = 0.78f;
+    // Extra swing input multiplier while holding Shift.
     [Range(1f, 2f)] public float shiftSwingBoostMultiplier = 1.25f;
+    // Extra help from Shift based on the swing angle.
     [Range(0f, 25f)] public float shiftAssistAngleBonus = 8f;
+    // If true, input works better when timed with the current swing direction.
     public bool useMomentumBasedSwingInput = true;
+    // Angle range near the bottom where the script helps the player build swing.
     [Range(0f, 45f)] public float bottomAssistAngleRange = 18f;
+    // Angle range where normal swing input still gives useful help.
     [Range(5f, 85f)] public float inputAssistAngleRange = 52f;
+    // Soft area that makes swing input fade instead of stopping suddenly.
     [Range(0f, 30f)] public float inputAssistSoftZone = 14f;
+    // Minimum swing speed before momentum input is considered meaningful.
     public float minAssistAngularSpeed = 0.18f;
+    // Small slowdown applied each physics step so the rope does not swing forever.
     [Range(0.8f, 1f)] public float angularDamping = 0.992f;
+    // Maximum allowed swing speed.
     public float maxAngularSpeed = 5.5f;
+    // Maximum angle away from the resting rope position.
     [Range(15f, 89f)] public float maxSwingAngleFromRest = 72f;
+    // Area near the swing limit where braking begins gently.
     [Range(0f, 30f)] public float swingLimitSoftZone = 12f;
+    // If true, the rope slows down before hitting the max swing angle.
     public bool useSoftSwingLimitBraking = true;
+    // Strength of braking near the swing angle limit.
     public float softLimitBrakeStrength = 7f;
+    // Strength that pushes the rope back from the angle limit.
     public float softLimitReturnStrength = 10f;
+    // If true, pushing farther outward gets weaker near the swing limit.
     public bool fadeOutwardInputNearLimits = true;
+    // Minimum rope length used for stable swing math.
     public float minSwingRadius = 0.55f;
+    // Multiplier for velocity when the player releases the rope.
     public float releaseSpeedMultiplier = 1f;
+    // Minimum sideways release speed.
     public float minReleaseTangentialSpeed = 3.2f;
+    // If true, release speed uses a fixed manual value.
     public bool useManualReleaseSpeed = true;
+    // Fixed sideways speed given when releasing.
     public float manualReleaseTangentialSpeed = 5.2f;
+    // If true, release help depends on current swing angle and speed.
     public bool scaleReleaseAssistBySwingMotion = true;
+    // Smallest angle where release help starts.
     public float releaseAssistMinAngle = 4f;
+    // Angle where release help reaches full strength.
     public float releaseAssistFullAngle = 18f;
+    // Smallest swing speed where release help starts.
     public float releaseAssistMinSpeed = 0.6f;
+    // Swing speed where release help reaches full strength.
     public float releaseAssistFullSpeed = 3f;
+    // How long normal air control waits after rope release.
     public float releaseAirControlDelay = 0.24f;
+    // Extra release speed based on A/D input direction.
     public float releaseInputSpeedBoost = 0.8f;
+    // Extra release speed while holding Shift.
     public float releaseShiftSpeedBoost = 0.8f;
+    // If true, Shift release boost depends on current swing speed.
     public bool scaleShiftReleaseBoostByCurrentSpeed = true;
+    // Swing speed where Shift release boost begins.
     public float shiftReleaseBoostMinSpeed = 2.5f;
+    // Swing speed where Shift release boost reaches full strength.
     public float shiftReleaseBoostFullSpeed = 5f;
+    // Extra speed near the top of the release arc.
     public float releaseApexSpeedBoost = 0.9f;
+    // Small upward push added when releasing.
     public float releaseUpwardBoost = 0.4f;
+    // Maximum total speed after releasing the rope.
     public float maxReleaseSpeed = 8f;
 
     [Header("Input")]
+    // Main key for grabbing the rope.
     public KeyCode grabKey = KeyCode.W;
+    // Backup key for grabbing the rope.
     public KeyCode alternateGrabKey = KeyCode.Space;
+    // Main key for releasing the rope.
     public KeyCode releaseKey = KeyCode.Space;
+    // Backup key for releasing the rope.
     public KeyCode alternateReleaseKey = KeyCode.S;
+    // If true, the player must press a grab key instead of only auto-grabbing.
     public bool allowManualGrabInput = false;
+    // Key for pushing swing left.
     public KeyCode leftKey = KeyCode.A;
+    // Key for pushing swing right.
     public KeyCode rightKey = KeyCode.D;
+    // Main key for stronger swing/release boost.
     public KeyCode boostKey = KeyCode.LeftShift;
+    // Backup key for stronger swing/release boost.
     public KeyCode alternateBoostKey = KeyCode.RightShift;
 
     [Header("Animation")]
+    // If true, forces the climb/hang animation state while attached.
     public bool forceClimbAnimationState = true;
+    // Animator state name used while the player is attached.
     public string climbStateName = "Stickman_Climb";
+    // Animator speed while attached; 0 can freeze the pose.
     public float attachedAnimatorSpeed = 0f;
 
     [Header("Swing Audio")]
+    // AudioSource used to play the swing wind sound.
     public AudioSource swingAudioSource;
+    // Wind sound played during swinging.
     public AudioClip swingWindSound;
+    // Loudest wind volume.
     [Range(0f, 1f)] public float swingWindMaxVolume = 1f;
+    // Quietest wind volume while sound is active.
     [Range(0f, 1f)] public float swingWindMinVolume = 0.55f;
+    // Swing angle that makes wind volume reach maximum.
     public float swingWindFullAngle = 45f;
+    // Swing speed that makes wind volume reach maximum.
     public float swingWindFullAngularSpeed = 3.2f;
+    // How quickly the wind sound fades louder or quieter.
     public float swingWindFadeSpeed = 7f;
+    // Lowest wind sound pitch.
     public float swingWindMinPitch = 0.85f;
+    // Highest wind sound pitch.
     public float swingWindMaxPitch = 1.15f;
+    // Start time inside the wind clip for looping.
     public float swingWindClipStartTime = 0.52f;
+    // End time inside the wind clip for looping.
     public float swingWindClipEndTime = 1.05f;
+    // Motion amount needed before wind sound starts.
     public float swingWindStartThreshold = 0.12f;
+    // Motion amount below this makes wind sound stop.
     public float swingWindStopThreshold = 0.06f;
 
-    [Header("Read Only Diagnostics")]
+    [Header("Read Only Status")]
     [SerializeField] private bool projectionValid;
     [SerializeField] private bool playerAttached;
     [SerializeField] private float currentProjectedLength;
@@ -189,17 +290,26 @@ public class ShadowRopeSwingZone : MonoBehaviour
     private float autoGrabCooldownTimer;
     private bool blockAutoGrabUntilPlayerLeavesRange;
 
+    // Purpose: Sets up the trigger collider when the script is reset in Unity.
+    // Input: BoxCollider on this GameObject.
+    // Output: The rope grab zone is a trigger.
     private void Reset()
     {
         ConfigureCollider();
     }
 
+    // Purpose: Sets up the trigger and remembers the rope's original rest position.
+    // Input: Rope end and BoxCollider references.
+    // Output: The rope zone is ready when play mode starts.
     private void Awake()
     {
         ConfigureCollider();
         CacheInitialRopeRestState();
     }
 
+    // Purpose: Refreshes the rope rest position while editing.
+    // Input: Current rope end position in the editor.
+    // Output: Gizmo/trigger preview stays correct outside play mode.
     private void OnEnable()
     {
         if (!Application.isPlaying)
@@ -208,6 +318,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         }
     }
 
+    // Purpose: Handles grab, release request, hand range checks, pose animation, and swing audio.
+    // Input: Player input and current trigger/hand state.
+    // Output: Player can attach to the rope or request release.
     private void Update()
     {
         UpdateGrabZone();
@@ -257,6 +370,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         }
     }
 
+    // Purpose: Updates rope physics at a steady rate.
+    // Input: Current swing state and release request.
+    // Output: The rope swings, moves the player, or settles after release.
     private void FixedUpdate()
     {
         if (!Application.isPlaying)
@@ -285,6 +401,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         UpdateSwing(true);
     }
 
+    // Purpose: Corrects the player's hand after animation updates.
+    // Input: Current hand target position.
+    // Output: The hand stays pinned to the rope more accurately.
     private void LateUpdate()
     {
         if (!Application.isPlaying || !pinHandInLateUpdate || !playerAttached || !hasCurrentHandTargetPosition)
@@ -296,6 +415,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         handPinError = Vector3.Distance(GetHandWorldPosition(), currentHandTargetPosition);
     }
 
+    // Purpose: Detects the player entering the rope grab trigger.
+    // Input: Trigger contact with the player.
+    // Output: The player becomes a grab candidate or auto-attaches.
     private void OnTriggerEnter(Collider other)
     {
         if (!Application.isPlaying)
@@ -316,6 +438,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         }
     }
 
+    // Purpose: Keeps track of the player while they stay inside the grab trigger.
+    // Input: Ongoing trigger contact.
+    // Output: The player remains available for rope grabbing.
     private void OnTriggerStay(Collider other)
     {
         if (!Application.isPlaying)
@@ -331,6 +456,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         candidatePlayerCollider = other;
     }
 
+    // Purpose: Detects the player leaving the rope grab trigger.
+    // Input: Trigger exit.
+    // Output: The player is no longer a grab candidate.
     private void OnTriggerExit(Collider other)
     {
         if (!Application.isPlaying)
@@ -349,6 +477,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         }
     }
 
+    // Purpose: Cleans up if this rope object is disabled.
+    // Input: Current attached/audio state.
+    // Output: The player is released and swing audio stops.
     private void OnDisable()
     {
         if (Application.isPlaying && playerAttached)
@@ -360,9 +491,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
     }
 
     /// <summary>
-    /// Purpose: Releases the player from the rope when an external system changes the rope shadow state.
-    /// Input: Current play-mode attachment state and configured regrab cooldown.
-    /// Output: The player is detached and briefly prevented from instantly regrabbing the same rope.
+    /// Purpose: Forces the player to let go of the rope.
+    /// Input: A call from another script, usually when the light phase changes.
+    /// Output: The player detaches and cannot instantly regrab the same rope.
     /// </summary>
     public void ForceDropFromRope()
     {
@@ -376,6 +507,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         blockAutoGrabUntilPlayerLeavesRange = true;
     }
 
+    // Purpose: Sets the BoxCollider as the rope grab trigger.
+    // Input: BoxCollider on this GameObject.
+    // Output: The collider detects the player without blocking movement.
     private void ConfigureCollider()
     {
         grabCollider = GetComponent<BoxCollider>();
@@ -383,6 +517,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         grabCollider.center = Vector3.zero;
     }
 
+    // Purpose: Moves and resizes the grab trigger to match the projected rope shadow.
+    // Input: Rope projection result, grab width, and trigger depth.
+    // Output: The trigger sits over the visible rope shadow.
     private void UpdateGrabZone()
     {
         if (grabCollider == null)
@@ -431,6 +568,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         grabCollider.size = new Vector3(grabWidth, currentProjectedLength, triggerDepth);
     }
 
+    // Purpose: Checks whether the player's hand is close enough to grab the rope.
+    // Input: Hand position and projected rope position.
+    // Output: Inspector status values show distance and grab range state.
     private void UpdateHandGrabDiagnostics()
     {
         handDistanceToRope = float.PositiveInfinity;
@@ -447,6 +587,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         handInGrabRange = handDistanceToRope <= handGrabDistance;
     }
 
+    // Purpose: Projects the rope start and end onto the shadow screen.
+    // Input: Rope endpoints, shadow screen, and light direction.
+    // Output: Projected rope start/end points if projection succeeds.
     private bool TryGetProjectedRope(out Vector3 start, out Vector3 end)
     {
         start = Vector3.zero;
@@ -468,6 +611,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
                TryProjectPoint(ropeEnd.position, screenPlane, lightDirection, out end);
     }
 
+    // Purpose: Projects one world point onto the shadow screen.
+    // Input: World point, screen plane, and light direction.
+    // Output: Projected point on the screen, if it hits.
     private bool TryProjectPoint(Vector3 worldPoint, Plane screenPlane, Vector3 lightDirection, out Vector3 projectedPoint)
     {
         Ray projectionRay = new Ray(worldPoint, lightDirection);
@@ -482,6 +628,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         return true;
     }
 
+    // Purpose: Checks if a collider belongs to the player.
+    // Input: Collider entering or staying in the trigger.
+    // Output: True means this collider is the player or part of the player.
     private bool IsPlayerCollider(Collider other)
     {
         if (other.CompareTag(playerTag))
@@ -492,17 +641,26 @@ public class ShadowRopeSwingZone : MonoBehaviour
         return other.attachedRigidbody != null && other.attachedRigidbody.CompareTag(playerTag);
     }
 
+    // Purpose: Checks if the manual grab key was pressed.
+    // Input: Grab key settings.
+    // Output: True means the player requested a grab.
     private bool IsGrabPressed()
     {
         return allowManualGrabInput &&
                (Input.GetKeyDown(grabKey) || Input.GetKeyDown(alternateGrabKey));
     }
 
+    // Purpose: Checks if the player pressed a release key.
+    // Input: Release key settings.
+    // Output: True means the player wants to let go.
     private bool IsReleasePressed()
     {
         return Input.GetKeyDown(releaseKey) || Input.GetKeyDown(alternateReleaseKey);
     }
 
+    // Purpose: Decides if automatic grabbing is allowed right now.
+    // Input: Auto-grab settings, cooldown, player grounded state, and optional player collider.
+    // Output: True means the rope can attach automatically.
     private bool CanAutoGrab(Collider playerCollider = null)
     {
         if (!autoGrabOnEnter || autoGrabCooldownTimer > 0f || blockAutoGrabUntilPlayerLeavesRange)
@@ -532,6 +690,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         return playerRigidbody != null && Mathf.Abs(playerRigidbody.velocity.y) > 0.05f;
     }
 
+    // Purpose: Keeps auto-grab blocked until the player leaves the rope range after release.
+    // Input: Current hand/trigger range.
+    // Output: Auto-grab becomes available again only after leaving range.
     private void UpdateAutoGrabReleaseBlock()
     {
         if (!blockAutoGrabUntilPlayerLeavesRange)
@@ -555,6 +716,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         }
     }
 
+    // Purpose: Reads left/right swing input.
+    // Input: A and D keys.
+    // Output: -1 for left, 1 for right, 0 for no input.
     private float GetSwingInput()
     {
         float input = 0f;
@@ -572,11 +736,17 @@ public class ShadowRopeSwingZone : MonoBehaviour
         return Mathf.Clamp(input, -1f, 1f);
     }
 
+    // Purpose: Checks whether the boost key is held.
+    // Input: Left Shift or Right Shift.
+    // Output: True means boost is active.
     private bool IsBoostHeld()
     {
         return Input.GetKey(boostKey) || Input.GetKey(alternateBoostKey);
     }
 
+    // Purpose: Attaches the player to the rope and starts swing mode.
+    // Input: Player collider or cached player reference.
+    // Output: Normal player control is paused and rope swinging begins.
     private void BeginSwing(Collider playerCollider)
     {
         if (playerAttached || !projectionValid)
@@ -663,6 +833,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         UpdateSwingAudio(0f);
     }
 
+    // Purpose: Saves player components needed for rope swinging.
+    // Input: Player collider.
+    // Output: Player Transform, Rigidbody, PlayerController, Animator, visual, and SpriteRenderer are cached.
     private void CachePlayer(Collider playerCollider)
     {
         if (playerCollider.attachedRigidbody != null)
@@ -697,6 +870,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         playerSpriteRenderer = player.GetComponentInChildren<SpriteRenderer>(true);
     }
 
+    // Purpose: Finds the player if this script does not already have a player reference.
+    // Input: Player tag or assigned playerRoot.
+    // Output: True means player and Rigidbody are available.
     private bool TryAcquirePlayerReference()
     {
         if (player != null && playerRigidbody != null)
@@ -743,6 +919,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         return playerRigidbody != null;
     }
 
+    // Purpose: Calculates one swing step.
+    // Input: Player input, gravity, current angle, and current speed.
+    // Output: Rope angle changes, rope end moves, and the player may move with it.
     private void UpdateSwing(bool movePlayer)
     {
         if (ropeStart == null || ropeEnd == null)
@@ -799,6 +978,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         }
     }
 
+    // Purpose: Updates the wind sound while swinging.
+    // Input: Swing angle, swing speed, and time passed.
+    // Output: Wind sound volume and pitch match the swing motion.
     private void UpdateSwingAudio(float deltaTime)
     {
         if (!Application.isPlaying || swingWindSound == null || !playerAttached)
@@ -860,6 +1042,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         }
     }
 
+    // Purpose: Starts or keeps the wind sound playing.
+    // Input: AudioSource and wind clip timing.
+    // Output: Wind audio plays from the loop start point.
     private void EnsureSwingAudioPlaying(AudioSource audioSource)
     {
         if (swingWindSound.loadState == AudioDataLoadState.Unloaded)
@@ -883,6 +1068,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         }
     }
 
+    // Purpose: Keeps the wind sound inside the chosen loop range.
+    // Input: AudioSource playback time.
+    // Output: Playback jumps back to the loop start when it reaches the loop end.
     private void UpdateSwingAudioLoopPoint(AudioSource audioSource)
     {
         if (!audioSource.isPlaying)
@@ -898,6 +1086,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         }
     }
 
+    // Purpose: Gets a safe loop start time for the wind clip.
+    // Input: Wind clip length and start-time setting.
+    // Output: A valid start time inside the clip.
     private float GetClampedSwingAudioStartTime()
     {
         if (swingWindSound == null)
@@ -908,6 +1099,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         return Mathf.Clamp(swingWindClipStartTime, 0f, Mathf.Max(0f, swingWindSound.length - 0.05f));
     }
 
+    // Purpose: Gets a safe loop end time for the wind clip.
+    // Input: Wind clip length, start time, and end-time setting.
+    // Output: A valid end time after the start time.
     private float GetClampedSwingAudioEndTime()
     {
         if (swingWindSound == null)
@@ -919,6 +1113,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         return Mathf.Clamp(swingWindClipEndTime, startTime + 0.05f, swingWindSound.length);
     }
 
+    // Purpose: Gets or creates the AudioSource for swing wind sound.
+    // Input: Optional assigned AudioSource and wind sound clip.
+    // Output: An AudioSource ready for swing audio.
     private AudioSource GetSwingAudioSource()
     {
         if (swingAudioSource != null)
@@ -936,6 +1133,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         return swingAudioSource;
     }
 
+    // Purpose: Sets basic AudioSource options for swing wind sound.
+    // Input: AudioSource to configure.
+    // Output: Audio plays as a clean 2D gameplay sound.
     private void ConfigureSwingAudioSource(AudioSource audioSource)
     {
         audioSource.playOnAwake = false;
@@ -947,6 +1147,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         audioSource.ignoreListenerPause = true;
     }
 
+    // Purpose: Stops the swing wind sound.
+    // Input: Current swing AudioSource.
+    // Output: Wind sound is stopped and volume resets.
     private void StopSwingAudio()
     {
         if (swingAudioSource == null)
@@ -963,6 +1166,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         swingAudioActive = false;
     }
 
+    // Purpose: Finds how far the rope is from its resting angle.
+    // Input: Rest angle and current swing angle.
+    // Output: Angle difference used by the swing math.
     private float GetAngleFromRestRadians()
     {
         return Mathf.DeltaAngle(
@@ -971,6 +1177,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         ) * Mathf.Deg2Rad;
     }
 
+    // Purpose: Makes swing input depend on timing and momentum.
+    // Input: Raw left/right input, current angle, and boost state.
+    // Output: Adjusted input that rewards pushing with the swing.
     private float GetMomentumBasedSwingInput(float input, float angleFromRest, bool boostHeld)
     {
         if (!useMomentumBasedSwingInput || Mathf.Abs(input) < 0.01f)
@@ -1018,6 +1227,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         return input * remainingSoftRange;
     }
 
+    // Purpose: Adds braking near the maximum swing angle.
+    // Input: Current angle away from rest.
+    // Output: Extra acceleration that slows and pulls the rope back.
     private float GetSoftLimitAcceleration(float angleFromRest)
     {
         if (!useSoftSwingLimitBraking)
@@ -1050,6 +1262,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         return -direction * (brakeAcceleration + returnAcceleration);
     }
 
+    // Purpose: Weakens input that tries to push past the swing limit.
+    // Input: Swing input and current angle.
+    // Output: Safer input near the maximum swing angle.
     private float GetLimitAwareSwingInput(float input, float angleFromRest)
     {
         if (!fadeOutwardInputNearLimits || Mathf.Abs(input) < 0.01f)
@@ -1084,6 +1299,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         return input * remainingSoftRange;
     }
 
+    // Purpose: Stops the rope from going past the maximum swing angle.
+    // Input: Current swing angle and speed.
+    // Output: Angle is clamped and outward speed may be stopped.
     private void EnforceSwingAngleLimits()
     {
         float maxAngle = Mathf.Clamp(maxSwingAngleFromRest, 1f, 89f) * Mathf.Deg2Rad;
@@ -1105,6 +1323,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         }
     }
 
+    // Purpose: Saves the rope's current rest position for swing math.
+    // Input: Rope start and rope end positions.
+    // Output: Rest angle, rest offset, and swing radius are stored.
     private void CaptureRopeRestState()
     {
         if (ropeStart == null || ropeEnd == null)
@@ -1130,6 +1351,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         hasRopeRestState = true;
     }
 
+    // Purpose: Remembers the rope end's original position from the editor.
+    // Input: Rope end Transform.
+    // Output: The rope can return to its original rest pose later.
     private void CacheInitialRopeRestState()
     {
         if (ropeEnd == null)
@@ -1144,6 +1368,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         hasInitialRopeRestState = true;
     }
 
+    // Purpose: Gets the original rope end position in world space.
+    // Input: Saved local/world rope end data.
+    // Output: Original rope end world position.
     private Vector3 GetInitialRopeEndWorldPosition()
     {
         if (!hasInitialRopeRestState)
@@ -1161,6 +1388,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         return initialRopeEndWorldPosition;
     }
 
+    // Purpose: Puts the rope end back to its original rest pose.
+    // Input: Saved rope end position.
+    // Output: Visible rope returns to its starting position.
     private void RestoreRopeEndToRestPose()
     {
         if (!driveRopeEndWhileSwinging || ropeEnd == null)
@@ -1188,6 +1418,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         }
     }
 
+    // Purpose: Moves the visible rope end based on the current swing angle.
+    // Input: Rope pivot, swing radius, and swing angle.
+    // Output: Rope end follows the pendulum swing.
     private void DriveRopeEndFromSwingAngle()
     {
         if (!driveRopeEndWhileSwinging || ropeStart == null || ropeEnd == null || !hasRopeRestState)
@@ -1205,6 +1438,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         ropeEnd.position = pivot + offset;
     }
 
+    // Purpose: Finds where the player's hand should be right now.
+    // Input: Projected rope end, swing angle, snap timer, and hand offset.
+    // Output: Target hand position for this frame.
     private Vector3 GetCurrentSwingHandTarget()
     {
         Vector3 target = attachHandToProjectedRopeEnd
@@ -1229,11 +1465,17 @@ public class ShadowRopeSwingZone : MonoBehaviour
         return target;
     }
 
+    // Purpose: Gets the projected rope end on the player's Z plane.
+    // Input: Projected rope end and player depth.
+    // Output: A hand target position aligned with the player.
     private Vector3 GetProjectedRopeEndOnPlayerPlane()
     {
         return new Vector3(projectedEnd.x, projectedEnd.y, playerPlaneZ);
     }
 
+    // Purpose: Calculates hand position from swing angle instead of projected rope end.
+    // Input: Projected rope start, swing angle, and rope length.
+    // Output: Hand target position along the swing arc.
     private Vector3 GetSwingHandPositionFromAngle()
     {
         Vector3 pivot = GetPlayerPlanePoint(projectedStart);
@@ -1246,6 +1488,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         return pivot + offset;
     }
 
+    // Purpose: Calculates how fast the hand target is moving.
+    // Input: Current and previous hand target positions.
+    // Output: Hand target velocity used for release speed.
     private void UpdateHandTargetVelocity(Vector3 target)
     {
         if (hasPreviousHandTargetPosition && Time.fixedDeltaTime > 0f)
@@ -1261,6 +1506,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         hasPreviousHandTargetPosition = true;
     }
 
+    // Purpose: Remembers which direction the player likely wants to release.
+    // Input: Current swing input and boost state.
+    // Output: Last release direction and boost state are stored.
     private void UpdateReleaseDirection(float rawInput, bool boostHeld)
     {
         lastRawSwingInput = rawInput;
@@ -1278,6 +1526,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         }
     }
 
+    // Purpose: Finds the closest point on the projected rope to a world point.
+    // Input: A world point, usually the player's hand.
+    // Output: Closest point on the rope shadow.
     private Vector3 GetClosestProjectedRopePoint(Vector3 worldPoint)
     {
         Vector3 start = GetPointOnWorldZ(projectedStart, worldPoint.z);
@@ -1295,11 +1546,17 @@ public class ShadowRopeSwingZone : MonoBehaviour
         return Vector3.Lerp(start, end, amount);
     }
 
+    // Purpose: Copies a point but forces it onto a chosen Z depth.
+    // Input: World point and target Z value.
+    // Output: Same X/Y with the requested Z.
     private Vector3 GetPointOnWorldZ(Vector3 point, float z)
     {
         return new Vector3(point.x, point.y, z);
     }
 
+    // Purpose: Gets the player's hand position.
+    // Input: Hand point, player visual, or fallback hand offset.
+    // Output: Best available world position for the hand.
     private Vector3 GetHandWorldPosition()
     {
         if (playerHandPoint != null)
@@ -1320,11 +1577,17 @@ public class ShadowRopeSwingZone : MonoBehaviour
         return Vector3.zero;
     }
 
+    // Purpose: Moves a point onto the player's Z plane.
+    // Input: World point.
+    // Output: Same X/Y at the player's depth.
     private Vector3 GetPlayerPlanePoint(Vector3 worldPoint)
     {
         return new Vector3(worldPoint.x, worldPoint.y, playerPlaneZ);
     }
 
+    // Purpose: Moves the player so their hand reaches the rope target.
+    // Input: Desired hand world position.
+    // Output: Player body moves while keeping the hand offset.
     private void MovePlayerHandTo(Vector3 handWorldPosition)
     {
         Vector3 currentHandOffset = attachedHandOffsetFromPlayer;
@@ -1343,6 +1606,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         MovePlayerTo(handWorldPosition - currentHandOffset);
     }
 
+    // Purpose: Moves the player to a world position.
+    // Input: Target world position.
+    // Output: Player Transform and Rigidbody position are updated.
     private void MovePlayerTo(Vector3 worldPosition)
     {
         if (playerRigidbody != null && playerRigidbody.isKinematic)
@@ -1356,6 +1622,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         }
     }
 
+    // Purpose: Turns the player visual toward a target X position.
+    // Input: Target X position, usually the rope.
+    // Output: Player visual faces the rope.
     private void FaceVisualTowards(float targetX)
     {
         if (playerVisual == null || player == null)
@@ -1371,6 +1640,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         playerVisual.localScale = scale;
     }
 
+    // Purpose: Starts the hanging/swing pose.
+    // Input: Animator, SpriteRenderer, and swing pose settings.
+    // Output: Player animation changes to a rope-hanging pose.
     private void BeginSwingPose()
     {
         if (playerAnimator != null)
@@ -1415,6 +1687,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         PlayClimbAnimationState();
     }
 
+    // Purpose: Updates manual swing sprites while attached.
+    // Input: Time passed and swing pose frames.
+    // Output: Player sprite changes frame and facing direction.
     private void UpdateManualSwingPose(float deltaTime)
     {
         if (!usingManualSwingPose || playerSpriteRenderer == null || swingPoseSprites == null || swingPoseSprites.Length == 0)
@@ -1446,6 +1721,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         }
     }
 
+    // Purpose: Updates which way the swing pose faces.
+    // Input: Player input and rope motion.
+    // Output: Player visual flips left or right when needed.
     private void UpdateSwingPoseFacing(float input)
     {
         if (!flipSwingPoseWithInput || playerVisual == null)
@@ -1497,6 +1775,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         ApplySwingPoseFacing(currentSwingPoseFacingRight);
     }
 
+    // Purpose: Chooses the first facing direction when swing pose begins.
+    // Input: Player input, rope angle, and player position.
+    // Output: True means face right; false means face left.
     private bool GetInitialSwingPoseFacing(float input)
     {
         if (input > facingInputThreshold)
@@ -1522,6 +1803,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         return swingPoseFacesRightByDefault;
     }
 
+    // Purpose: Checks if settled-rope facing should be used.
+    // Input: Player input, rope angle, and swing speed.
+    // Output: True means use the fixed settled facing direction.
     private bool ShouldUseSettledFacing(float input)
     {
         if (!lockFacingWhenSwingSettled || Mathf.Abs(input) >= facingInputThreshold)
@@ -1535,6 +1819,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
                Mathf.Abs(angularVelocity) <= settledFacingAngularSpeed;
     }
 
+    // Purpose: Applies the chosen facing direction to the player visual.
+    // Input: True for facing right, false for facing left.
+    // Output: Player visual scale flips if needed.
     private void ApplySwingPoseFacing(bool shouldFaceRight)
     {
         float desiredSign = shouldFaceRight == swingPoseFacesRightByDefault ? 1f : -1f;
@@ -1543,6 +1830,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         playerVisual.localScale = scale;
     }
 
+    // Purpose: Restores the player's normal pose/animation after swinging.
+    // Input: Saved Animator, sprite, and visual scale values.
+    // Output: Player visuals return to normal.
     private void RestoreSwingPose()
     {
         if (playerAnimator != null)
@@ -1566,6 +1856,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         facingSwitchCooldownTimer = 0f;
     }
 
+    // Purpose: Ends rope swinging.
+    // Input: Whether to give the player release velocity.
+    // Output: Player control is restored and the rope may keep settling.
     private void FinishSwing(bool applyReleaseVelocity)
     {
         Vector3 releaseVelocity = Vector3.zero;
@@ -1625,6 +1918,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         }
     }
 
+    // Purpose: Calculates the velocity the player gets when releasing.
+    // Input: Swing direction, hand target speed, input boost, and release settings.
+    // Output: A launch velocity for the player.
     private Vector3 GetReleaseVelocity()
     {
         Vector3 baseTangent = new Vector3(
@@ -1668,6 +1964,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         return releaseVelocity;
     }
 
+    // Purpose: Decides which direction the release should go.
+    // Input: Player input, rope speed, and current sideways release speed.
+    // Output: -1 or 1 release direction.
     private float GetReleaseDirectionSign(float signedTangentialSpeed)
     {
         if (Mathf.Abs(lastRawSwingInput) >= facingInputThreshold)
@@ -1688,6 +1987,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         return Mathf.Sign(lastReleaseDirectionSign);
     }
 
+    // Purpose: Decides how much release assistance should apply.
+    // Input: Current swing speed and angle.
+    // Output: A value from 0 to 1 for release boost strength.
     private float GetReleaseAssistAmount(float currentTangentialSpeed, float angleFromRestDegrees)
     {
         if (!scaleReleaseAssistBySwingMotion)
@@ -1706,6 +2008,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         return Mathf.Max(angleAmount, speedAmount);
     }
 
+    // Purpose: Calculates extra release speed from holding Shift.
+    // Input: Current sideways release speed and Shift state.
+    // Output: Extra release speed amount.
     private float GetShiftReleaseBoost(float currentTangentialSpeed)
     {
         if (!lastBoostInputHeld || releaseShiftSpeedBoost <= 0f)
@@ -1725,6 +2030,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         return releaseShiftSpeedBoost * speedAmount;
     }
 
+    // Purpose: Sets an Animator bool safely.
+    // Input: Animator parameter name and true/false value.
+    // Output: The value changes only if that bool exists.
     private void SetAnimatorBool(string parameterName, bool value)
     {
         if (playerAnimator == null || !HasAnimatorBool(parameterName))
@@ -1735,6 +2043,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         playerAnimator.SetBool(parameterName, value);
     }
 
+    // Purpose: Plays the climb/hang animation state directly.
+    // Input: Animator and state name.
+    // Output: Player shows the rope hanging pose.
     private void PlayClimbAnimationState()
     {
         if (!forceClimbAnimationState || playerAnimator == null || string.IsNullOrEmpty(climbStateName))
@@ -1746,6 +2057,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         playerAnimator.Update(0f);
     }
 
+    // Purpose: Checks if the Animator has a bool with this name.
+    // Input: Animator parameter name.
+    // Output: True means it is safe to set that bool.
     private bool HasAnimatorBool(string parameterName)
     {
         if (playerAnimator == null)
@@ -1767,6 +2081,9 @@ public class ShadowRopeSwingZone : MonoBehaviour
         return false;
     }
 
+    // Purpose: Draws rope projection helper lines in the Scene view.
+    // Input: Projected rope points and hand range state.
+    // Output: Gizmos help debug where the rope grab area is.
     private void OnDrawGizmosSelected()
     {
         if (!projectionValid)

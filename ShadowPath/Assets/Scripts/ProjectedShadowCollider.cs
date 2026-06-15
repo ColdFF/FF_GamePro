@@ -2,32 +2,39 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Builds a projected collider that matches the shadow silhouette
-/// of a shadow caster on the shadow screen.
-/// The collider is rebuilt when the light changes and can carry
-/// a player standing on the upper silhouette edge.
+/// Purpose: Turns the whole shadow shape into one collider.
+/// Input: The shadow caster object, the shadow screen, and the light direction.
+/// Output: The player can collide with or stand on the generated shadow shape.
 /// </summary>
 [RequireComponent(typeof(MeshFilter))]
 [RequireComponent(typeof(MeshCollider))]
 public class ProjectedShadowCollider : MonoBehaviour
 {
     [Header("Scene References")]
+    // The object whose shadow becomes a collider.
     public Renderer shadowCasterRenderer;
+    // The wall/screen where the shadow appears.
     public Transform shadowScreen;
+    // The light that decides where the shadow is projected.
     public Light directionalLight;
 
     [Header("Collider Shape")]
+    // How deep the generated collider is in 3D space.
     [Min(0.1f)]
     public float colliderDepth = 6f;
 
+    // Extra size added around the shadow outline.
     [Min(0f)]
     public float outlinePadding = 0f;
 
+    // If true, rebuilds the collider every frame while the light or object moves.
     public bool rebuildEveryFrame = true;
 
     [Header("Passenger Carry")]
+    // If true, a moving shadow can carry the player standing on it.
     public bool carryPlayerWithShadow = true;
 
+    // How close the player must be to the top of the shadow to count as standing on it.
     [Min(0.01f)]
     public float topContactTolerance = 0.2f;
 
@@ -41,26 +48,26 @@ public class ProjectedShadowCollider : MonoBehaviour
     private Rigidbody currentPassengerRigidbody;
     private PlayerController currentPassengerController;
 
-    // Purpose: Prepares the generated mesh and required components.
-    // Input: MeshFilter and MeshCollider attached to this GameObject.
-    // Output: A reusable dynamic mesh for the projected shadow collider.
+    // Purpose: Sets up the mesh parts this script needs.
+    // Input: MeshFilter and MeshCollider on this GameObject.
+    // Output: A reusable generated mesh is ready.
     void Awake()
     {
         CacheComponents();
         CreateGeneratedMesh();
     }
 
-    // Purpose: Builds the first projected shadow collider at the start of gameplay.
-    // Input: Current shadow caster, screen, and directional light references.
-    // Output: A generated collider mesh matching the current shadow outline.
+    // Purpose: Builds the first shadow collider when the level starts.
+    // Input: Current caster, screen, and light references.
+    // Output: The shadow has a collider before the player uses it.
     void Start()
     {
         RebuildShadowCollider();
     }
 
-    // Purpose: Keeps the projected collider aligned with light changes.
-    // Input: Updated directional light direction each frame.
-    // Output: Rebuilds the projected collider after light movement.
+    // Purpose: Keeps the shadow collider following the moving light.
+    // Input: The current light direction each frame.
+    // Output: The collider is rebuilt when needed.
     void LateUpdate()
     {
         if (rebuildEveryFrame)
@@ -69,9 +76,9 @@ public class ProjectedShadowCollider : MonoBehaviour
         }
     }
 
-    // Purpose: Rebuilds a 3D collider from the 2D projection of the caster mesh.
-    // Input: Shadow caster mesh vertices projected onto the shadow screen.
-    // Output: A convex extruded mesh collider that follows the shadow outline.
+    // Purpose: Rebuilds the collider from the current shadow shape.
+    // Input: Mesh points from the caster projected onto the screen.
+    // Output: A 3D MeshCollider follows the shadow outline.
     [ContextMenu("Rebuild Shadow Collider")]
     public void RebuildShadowCollider()
     {
@@ -146,9 +153,9 @@ public class ProjectedShadowCollider : MonoBehaviour
         currentHull.AddRange(newHull);
     }
 
-    // Purpose: Projects one caster vertex onto the screen plane along the light direction.
-    // Input: A world-space vertex, light direction, and shadow screen plane.
-    // Output: The projected world-space point on the shadow screen.
+    // Purpose: Projects one object point onto the shadow screen.
+    // Input: One world point, the light direction, and the screen plane.
+    // Output: The point where that object point lands as a shadow.
     bool TryProjectPointToScreen(
         Vector3 worldPoint,
         Vector3 lightDirection,
@@ -171,9 +178,9 @@ public class ProjectedShadowCollider : MonoBehaviour
         return true;
     }
 
-    // Purpose: Builds a convex outline around projected mesh points.
-    // Input: Projected 2D points on the shadow screen.
-    // Output: Ordered hull points around the shadow silhouette.
+    // Purpose: Builds the outside outline of the shadow.
+    // Input: All 2D shadow points on the screen.
+    // Output: Ordered points around the shadow edge.
     List<Vector2> BuildConvexHull(List<Vector2> points)
     {
         List<Vector2> sortedPoints = new List<Vector2>(points);
@@ -243,9 +250,9 @@ public class ProjectedShadowCollider : MonoBehaviour
         return lowerHull;
     }
 
-    // Purpose: Creates a thin 3D prism from the projected shadow outline.
-    // Input: Ordered shadow hull points on the shadow screen.
-    // Output: MeshFilter and MeshCollider using the generated silhouette mesh.
+    // Purpose: Turns the 2D shadow outline into a 3D collider shape.
+    // Input: Ordered shadow outline points.
+    // Output: MeshFilter and MeshCollider use the new shadow mesh.
     void BuildExtrudedColliderMesh(List<Vector2> hull)
     {
         int pointCount = hull.Count;
@@ -303,9 +310,9 @@ public class ProjectedShadowCollider : MonoBehaviour
         meshCollider.sharedMesh = generatedMesh;
     }
 
-    // Purpose: Moves the standing player with the upper shadow edge deformation.
-    // Input: The previous and current shadow hull outlines.
-    // Output: Moves the player by the delta between matching top-edge support points.
+    // Purpose: Moves the player when the shadow shape under them moves.
+    // Input: Old shadow outline and new shadow outline.
+    // Output: The player shifts with the top of the shadow.
     void CarryPassengerWithHullChange(List<Vector2> previousHull, List<Vector2> newHull)
     {
         Vector2 passengerFootLocalPoint = GetPassengerScreenFootPoint();
@@ -328,9 +335,9 @@ public class ProjectedShadowCollider : MonoBehaviour
         MovePassenger(supportDelta);
     }
 
-    // Purpose: Finds the previous top support point and maps it to the matching new hull edge.
-    // Input: Previous hull, new hull, and passenger foot X position on the screen.
-    // Output: Matching old and new support points on the shadow upper edge.
+    // Purpose: Finds the old and new top points under the player's feet.
+    // Input: Old shadow outline, new shadow outline, and player foot X position.
+    // Output: Matching support points before and after the shadow moved.
     bool TryGetMappedTopSupportPoints(
         List<Vector2> previousHull,
         List<Vector2> newHull,
@@ -379,9 +386,9 @@ public class ProjectedShadowCollider : MonoBehaviour
         return true;
     }
 
-    // Purpose: Finds the top hull edge directly under a given screen X position.
-    // Input: Hull outline and passenger foot X coordinate.
-    // Output: Edge index, interpolation amount, and support point on the upper edge.
+    // Purpose: Finds the top shadow edge under one horizontal position.
+    // Input: Shadow outline and the player's foot X position.
+    // Output: The edge number and exact support point on the top edge.
     bool TryGetTopEdgeAtX(
         List<Vector2> hull,
         float x,
@@ -454,9 +461,9 @@ public class ProjectedShadowCollider : MonoBehaviour
         return foundEdge;
     }
 
-    // Purpose: Gets the current passenger foot position on the shadow screen.
-    // Input: Current passenger Transform and optional Collider bounds.
-    // Output: Screen-local foot point used for shadow carrying.
+    // Purpose: Finds where the player's feet are on the shadow screen.
+    // Input: Player Transform and Collider.
+    // Output: A 2D foot position on the screen.
     Vector2 GetPassengerScreenFootPoint()
     {
         if (currentPassenger == null)
@@ -486,9 +493,9 @@ public class ProjectedShadowCollider : MonoBehaviour
         return GetScreenLocalPoint(currentPassenger.position);
     }
 
-    // Purpose: Moves the carried player without parenting or scaling them.
-    // Input: World-space support point movement.
-    // Output: Updates the passenger position by the same delta.
+    // Purpose: Moves the player by the shadow movement.
+    // Input: How far the support point moved.
+    // Output: The player position moves by the same amount.
     void MovePassenger(Vector3 supportDelta)
     {
         if (supportDelta.sqrMagnitude <= 0.0000001f)
@@ -516,9 +523,9 @@ public class ProjectedShadowCollider : MonoBehaviour
         }
     }
 
-    // Purpose: Finds the highest hull edge at a given horizontal screen position.
-    // Input: Hull outline and an X coordinate on the shadow screen.
-    // Output: Top Y coordinate of the silhouette at that X.
+    // Purpose: Finds the top of the shadow at one horizontal position.
+    // Input: Shadow outline and an X position on the screen.
+    // Output: The highest Y position there.
     bool TryGetTopYAtX(List<Vector2> hull, float x, out float topY)
     {
         topY = float.NegativeInfinity;
@@ -564,9 +571,9 @@ public class ProjectedShadowCollider : MonoBehaviour
         return foundIntersection;
     }
 
-    // Purpose: Gets the local screen-space X and Y of a world point.
-    // Input: World-space point near the shadow screen.
-    // Output: 2D coordinate using the screen right and up directions.
+    // Purpose: Converts a real Unity position into a 2D screen position.
+    // Input: A world position near the shadow screen.
+    // Output: X/Y coordinates on the shadow screen.
     Vector2 GetScreenLocalPoint(Vector3 worldPoint)
     {
         Vector3 offsetFromScreenOrigin = worldPoint - shadowScreen.position;
@@ -577,9 +584,9 @@ public class ProjectedShadowCollider : MonoBehaviour
         return new Vector2(localX, localY);
     }
 
-    // Purpose: Converts a local screen-space point back into world space.
-    // Input: Local X and Y coordinate on the shadow screen.
-    // Output: World-space point on the shadow screen plane.
+    // Purpose: Converts a 2D screen position back into the Unity scene.
+    // Input: X/Y coordinates on the shadow screen.
+    // Output: A world position on the shadow screen.
     Vector3 GetScreenWorldPoint(Vector2 screenLocalPoint)
     {
         return shadowScreen.position +
@@ -587,25 +594,25 @@ public class ProjectedShadowCollider : MonoBehaviour
                shadowScreen.up * screenLocalPoint.y;
     }
 
-    // Purpose: Registers the player when they touch the upper silhouette edge.
-    // Input: Collision contact with the projected shadow collider.
-    // Output: Stores the current player passenger references.
+    // Purpose: Starts tracking the player when they touch the shadow.
+    // Input: Collision with the generated shadow collider.
+    // Output: The script remembers the player if they are on top.
     void OnCollisionEnter(Collision collision)
     {
         TrySetPassenger(collision);
     }
 
-    // Purpose: Keeps passenger tracking aligned while the player stands on the silhouette.
-    // Input: Ongoing collision contact with the projected shadow collider.
-    // Output: Refreshes or clears the current passenger state.
+    // Purpose: Keeps checking whether the player is still standing on the shadow.
+    // Input: Ongoing collision with the generated shadow collider.
+    // Output: Player tracking stays correct.
     void OnCollisionStay(Collision collision)
     {
         TrySetPassenger(collision);
     }
 
-    // Purpose: Clears passenger tracking when the player leaves the silhouette.
-    // Input: Collision exit from the projected shadow collider.
-    // Output: Stops carrying that player.
+    // Purpose: Stops tracking the player when they leave the shadow.
+    // Input: Collision exit from the generated shadow collider.
+    // Output: The script stops carrying that player.
     void OnCollisionExit(Collision collision)
     {
         Transform exitingPlayer = GetPlayerTransform(collision);
@@ -621,9 +628,9 @@ public class ProjectedShadowCollider : MonoBehaviour
         }
     }
 
-    // Purpose: Stores the player only when they are standing on the upper shadow edge.
-    // Input: Collision data from the projected shadow collider.
-    // Output: Current passenger references for shadow carrying.
+    // Purpose: Stores the player only if they are standing on the top of the shadow.
+    // Input: Collision data from the shadow collider.
+    // Output: Player references are saved for carrying.
     void TrySetPassenger(Collision collision)
     {
         Transform playerTransform = GetPlayerTransform(collision);
@@ -653,9 +660,9 @@ public class ProjectedShadowCollider : MonoBehaviour
         }
     }
 
-    // Purpose: Checks whether collision contact is close to the silhouette top edge.
-    // Input: Collision contact points and the current hull outline.
-    // Output: True when the player touches a walkable upper shadow edge.
+    // Purpose: Checks if the player is touching the top of the shadow.
+    // Input: Collision contact points and the current shadow outline.
+    // Output: True means the player is on a usable top edge.
     bool IsTouchingShadowTop(Collision collision)
     {
         if (currentHull.Count < 3)
@@ -682,9 +689,9 @@ public class ProjectedShadowCollider : MonoBehaviour
         return false;
     }
 
-    // Purpose: Finds the Player Transform from a collision.
-    // Input: Collision data from a collider or Rigidbody tagged as Player.
-    // Output: Player Transform or null.
+    // Purpose: Finds the player object from a collision.
+    // Input: Collision data from an object tagged Player.
+    // Output: Player Transform, or null if this collision is not the player.
     Transform GetPlayerTransform(Collision collision)
     {
         if (collision.transform.CompareTag("Player"))
@@ -700,9 +707,9 @@ public class ProjectedShadowCollider : MonoBehaviour
         return null;
     }
 
-    // Purpose: Removes the current passenger references.
+    // Purpose: Clears the saved player references.
     // Input: None.
-    // Output: Stops carrying the player.
+    // Output: The script stops treating anyone as being carried.
     void ClearPassenger()
     {
         currentPassenger = null;
@@ -710,9 +717,9 @@ public class ProjectedShadowCollider : MonoBehaviour
         currentPassengerController = null;
     }
 
-    // Purpose: Slightly expands the outline if collider tolerance is needed.
-    // Input: Hull points and requested padding amount.
-    // Output: Hull points moved outward from their center.
+    // Purpose: Makes the shadow outline a little bigger.
+    // Input: Shadow outline points and padding amount.
+    // Output: Points move outward from the center.
     void ExpandHullFromCenter(List<Vector2> hull, float padding)
     {
         Vector2 center = Vector2.zero;
@@ -735,18 +742,18 @@ public class ProjectedShadowCollider : MonoBehaviour
         }
     }
 
-    // Purpose: Finds the signed turn direction for convex hull construction.
+    // Purpose: Checks which way three points turn.
     // Input: Three 2D points.
-    // Output: Positive for a left turn, negative for a right turn.
+    // Output: A number used to build the outside outline correctly.
     float Cross(Vector2 origin, Vector2 a, Vector2 b)
     {
         return (a.x - origin.x) * (b.y - origin.y) -
                (a.y - origin.y) * (b.x - origin.x);
     }
 
-    // Purpose: Sorts points from left to right, then bottom to top.
+    // Purpose: Sorts shadow points in a stable order.
     // Input: Two 2D points.
-    // Output: Comparison value used by List.Sort.
+    // Output: Which point should come first.
     int ComparePoints(Vector2 a, Vector2 b)
     {
         int xComparison = a.x.CompareTo(b.x);
@@ -759,9 +766,9 @@ public class ProjectedShadowCollider : MonoBehaviour
         return a.y.CompareTo(b.y);
     }
 
-    // Purpose: Stores required components from this GameObject.
-    // Input: MeshFilter and MeshCollider on this object.
-    // Output: Cached references used while rebuilding.
+    // Purpose: Gets the MeshFilter and MeshCollider from this object.
+    // Input: Components on this GameObject.
+    // Output: References are saved for rebuilding.
     void CacheComponents()
     {
         if (meshFilter == null)
@@ -775,9 +782,9 @@ public class ProjectedShadowCollider : MonoBehaviour
         }
     }
 
-    // Purpose: Creates the reusable generated mesh once.
+    // Purpose: Creates the mesh object used by the generated shadow collider.
     // Input: None.
-    // Output: Dynamic mesh object for the projected collider.
+    // Output: One reusable mesh is ready.
     void CreateGeneratedMesh()
     {
         if (generatedMesh != null)
@@ -790,9 +797,9 @@ public class ProjectedShadowCollider : MonoBehaviour
         generatedMesh.MarkDynamic();
     }
 
-    // Purpose: Prevents rebuilding before required references are assigned.
-    // Input: Scene reference fields.
-    // Output: True when projection can be calculated.
+    // Purpose: Checks that the needed scene references exist.
+    // Input: Caster object, shadow screen, and light fields.
+    // Output: True means the script can build the shadow collider.
     bool HasRequiredReferences()
     {
         return shadowCasterRenderer != null &&
