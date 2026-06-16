@@ -177,3 +177,11 @@ Each entry should briefly answer:
 | What was completed? | Polished the main menu instructions flow by adding a two-page `HOW TO PLAY` popup with Goal/Core Mechanic content on the first page and Controls on the second page. Refined button behaviour so menu, instruction, and level-complete buttons reset after hover/click instead of staying visually selected. Added UI hover and click-confirm sound effects, restyled the level-complete buttons back toward the project's black/white menu language, and fixed hidden button hover sounds during chapter subtitle transitions. The project update was committed and pushed through the project polish branch. |
 | What will be worked on next? | Update the documentation branch with the new UI audio credits, Daily Scrum notes, and Testing Log evidence. After that, continue final regression testing across the main menu, level transitions, and level-complete screens before final submission. |
 | Blockers, risks, or problems | UI polish touches shared menu scripts and transition flow, so it needs careful regression testing to ensure audio feedback does not trigger from inactive or hidden UI. Generated and processed UI audio also needs accurate asset-credit documentation. |
+
+### 2026-06-17 - Final Polish and Repository Sync
+
+| Question | Notes |
+| --- | --- |
+| What was completed? | Synced the repository Unity project with the latest local playable project, removed an unused legacy shadow script, moved `LightAngleController` into the core script folder, and updated final documentation. |
+| What will be worked on next? | Open the final pull request, check the GitHub files, and prepare the short presentation around the latest menu, level select, Level 03, and Level 04 work. |
+| Blockers, risks, or problems | No major blocker. The final check is to make sure the pushed branch and PR show the intended project and documentation changes. |

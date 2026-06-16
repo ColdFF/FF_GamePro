@@ -578,3 +578,12 @@ Each test entry should include:
 | Actual result | The transition overlay now blocks raycasts, selected UI state is cleared when the transition starts, and menu hover feedback is suppressed while the chapter transition is playing. Moving the cursor during the subtitle transition no longer triggers hidden button hover sounds. |
 | Status | Fixed |
 
+### 2026-06-17 - Final Project Sync and Documentation Check
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Final repository project sync, script cleanup, and documentation polish |
+| Expected result | The repository Unity project should match the latest local Unity project, unused scripts should be removed safely, and final documents should record controls and level select images. |
+| Actual result | `Assets`, `ProjectSettings`, and `Packages` were checked against the local Unity project. The unused `ProjectedShadowCollider` cleanup, `LightAngleController` folder move, README control update, and level select screenshot credits were reviewed before final commit preparation. |
+| Status | Pass |
+
