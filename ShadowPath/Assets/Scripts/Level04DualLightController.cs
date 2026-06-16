@@ -108,8 +108,6 @@ public class Level04DualLightController : MonoBehaviour
     public bool dropAttachedRopesOnLightSwitch = true;
     // Shadow platform scripts controlled by the active Level 4 light.
     public ProjectedShadowAllEdgePlatform[] allEdgePlatforms;
-    // Shadow collider scripts controlled by the active Level 4 light.
-    public ProjectedShadowCollider[] shadowColliders;
     // Shadow ladder scripts controlled by the active Level 4 light.
     public ShadowLadderClimbZone[] ladderZones;
     // Shadow rope scripts controlled by the active Level 4 light.
@@ -342,7 +340,7 @@ public class Level04DualLightController : MonoBehaviour
     /// <summary>
     /// Purpose: Finds the shadow objects in the scene.
     /// Input: All scene objects, including inactive helper objects.
-    /// Output: The script has lists of platforms, colliders, ladders, and ropes to control.
+    /// Output: The script has lists of platforms, ladders, and ropes to control.
     /// </summary>
     private void RefreshSceneShadowUsers()
     {
@@ -352,7 +350,6 @@ public class Level04DualLightController : MonoBehaviour
         }
 
         allEdgePlatforms = FindObjectsOfType<ProjectedShadowAllEdgePlatform>(true);
-        shadowColliders = FindObjectsOfType<ProjectedShadowCollider>(true);
         ladderZones = FindObjectsOfType<ShadowLadderClimbZone>(true);
         ropeSwingZones = FindObjectsOfType<ShadowRopeSwingZone>(true);
     }
@@ -404,24 +401,6 @@ public class Level04DualLightController : MonoBehaviour
             platform.enabled = allowed;
             platform.directionalLight = allowed ? activeLight : null;
             platform.Rebuild();
-        }
-
-        foreach (ProjectedShadowCollider shadowCollider in shadowColliders)
-        {
-            if (shadowCollider == null)
-            {
-                continue;
-            }
-
-            bool allowed = IsShadowUserAllowed(shadowCollider, activePhase);
-            shadowCollider.enabled = allowed;
-            shadowCollider.directionalLight = allowed ? activeLight : null;
-            SetColliderEnabled(shadowCollider, allowed);
-
-            if (allowed)
-            {
-                shadowCollider.RebuildShadowCollider();
-            }
         }
 
         foreach (ShadowLadderClimbZone ladderZone in ladderZones)

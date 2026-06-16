@@ -550,8 +550,7 @@ public class PlayerController : MonoBehaviour
 
         Transform groundTransform = currentGroundCollider.transform;
 
-        if (groundTransform.GetComponentInParent<ProjectedShadowAllEdgePlatform>() != null ||
-            groundTransform.GetComponentInParent<ProjectedShadowCollider>() != null)
+        if (groundTransform.GetComponentInParent<ProjectedShadowAllEdgePlatform>() != null)
         {
             return true;
         }

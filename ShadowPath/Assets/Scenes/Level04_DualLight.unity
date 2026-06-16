@@ -19910,7 +19910,6 @@ MonoBehaviour:
   autoRefreshSceneShadowUsers: 1
   dropAttachedRopesOnLightSwitch: 1
   allEdgePlatforms: []
-  shadowColliders: []
   ladderZones: []
   ropeSwingZones: []
 --- !u!82 &2095150500
