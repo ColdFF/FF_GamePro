@@ -185,3 +185,11 @@ Each entry should briefly answer:
 | What was completed? | Polished the final UI flow by connecting the main menu `EXIT` button, adding the Level 04 ending storyline before the completion menu, and restoring Level 04 instruction/pause UI. The repository project copy was also synced with the latest local Unity project, including the `Support_UI_Transition` script reorganisation and removal of obsolete scripts. |
 | What will be worked on next? | Finish updating the remaining documentation, push the docs update, and do a final playthrough check from the main menu through all four levels. |
 | Blockers, risks, or problems | The project sync touched several Unity scenes and moved/deleted scripts, so the final submission check should still watch for stale files, duplicate classes, and unwanted Unity-generated changes. |
+
+### 2026-06-17 - Final Documentation Polish
+
+| Question | Notes |
+| --- | --- |
+| What was completed? | Updated the final README controls, recorded the level select screenshots in the asset credits, and added a short final testing/documentation note. |
+| What will be worked on next? | Open the final documentation pull request and check that the PR only contains the intended README and docs changes. |
+| Blockers, risks, or problems | No major blocker. The main check is to keep this final documentation branch based on the latest `main` branch to avoid documentation conflicts. |
