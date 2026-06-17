@@ -87,6 +87,7 @@ The main menu loads the playable levels in order:
 | Boost rope swing | Hold `Shift` while swinging |
 | Adjust active light direction | Arrow keys |
 | Switch active light phase in Level 04 | `F` |
+| Pause / resume gameplay | `R` |
 
 ## Technical Highlights
 
@@ -97,7 +98,7 @@ The main menu loads the playable levels in order:
 | Shadow ladder interaction | [ShadowLadderClimbZone.cs](ShadowPath/Assets/Scripts/ShadowLadderClimbZone.cs) supports automatic ladder grabbing, climbing, pausing climb animation, bottom detach, and top exit behaviour. |
 | Rope-shadow swinging | [ShadowRopeSwingZone.cs](ShadowPath/Assets/Scripts/ShadowRopeSwingZone.cs) handles rope-shadow grabbing, swing input, release momentum, and forced release when a shadow state changes. |
 | Dual-light level logic | [Level04DualLightController.cs](ShadowPath/Assets/Scripts/Level04DualLightController.cs) switches between Phase A and Phase B lights and updates phase-bound shadow platforms, ladders, and rope zones. |
-| Menu and scene flow | [ChapterTransitionManager.cs](ShadowPath/Assets/Scripts/ChapterTransitionManager.cs) supports chapter-style scene transitions from the main menu and between levels. |
+| Menu and scene flow | [ChapterTransitionManager.cs](ShadowPath/Assets/Support_UI_Transition/ChapterTransitionManager.cs) supports chapter-style scene transitions from the main menu and between levels. |
 
 ## Repository Structure
 

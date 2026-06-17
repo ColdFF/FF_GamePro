@@ -604,3 +604,12 @@ Each test entry should include:
 | Expected result | Level 04 should match the earlier levels by showing an instruction popup for the new dual-light switching mechanic, giving the player access to pause, and allowing the instruction popup to be reopened from the top-left UI. |
 | Actual result | Level 04 now includes the same instruction/pause UI structure as the previous levels. The second instruction page explains pressing `F` to switch the light and combining both shadow paths to move forward, while the pause and instruction shortcut controls are available after the opening popup flow. |
 | Status | Fixed |
+
+### 2026-06-17 - Final Documentation Check
+
+| Field | Notes |
+| --- | --- |
+| Feature tested | Final README controls and documentation records |
+| Expected result | The final documentation should mention the `R` pause control, record the four level select screenshots, and keep the final scrum/testing notes up to date. |
+| Actual result | The README control table, asset credits, Daily Scrum, and Testing Log were updated on a fresh documentation branch based on the latest `main`. |
+| Status | Pass |
