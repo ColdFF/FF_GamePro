@@ -58,6 +58,16 @@ The active Unity project is stored in [ShadowPath/](ShadowPath/). Supporting doc
 
 ## How To Run ShadowPath
 
+### Option 1: Run the packaged Windows build
+
+1. Go to the [ShadowPath v1.0.0 release](https://github.com/ColdFF/FF_GamePro/releases/tag/v1.0.0).
+2. Download `ShadowPath_Windows_v1.0.0.zip`.
+3. Extract the zip file to a local folder.
+4. Open the extracted folder.
+5. Double-click `ShadowPath.exe`.
+
+### Option 2: Run from the Unity project
+
 1. Clone or download this repository.
 2. Open Unity Hub.
 3. Add the [ShadowPath/](ShadowPath/) folder as a Unity project.
@@ -119,6 +129,7 @@ The main menu loads the playable levels in order:
 | [docs/Game_Concept.md](docs/Game_Concept.md) | Game concept, design goals, scope, risks, target audience, and success criteria. |
 | [docs/Development_Workflow.md](docs/Development_Workflow.md) | Git workflow, Kanban process, issue usage, testing notes, and definition of done. |
 | [docs/Asset_Credits.md](docs/Asset_Credits.md) | External asset sources, licences, access dates, intended use, edits, and AI-assisted asset notes. |
+| [docs/AI_Declaration_and_Own_Contribution.md](docs/AI_Declaration_and_Own_Contribution.md) | AI assistance declaration, own contribution statement, verification process, and final responsibility boundary. |
 | [docs/Testing_Log.md](docs/Testing_Log.md) | Feature tests, bug checks, retesting evidence, and regression notes. |
 | [docs/Daily_Scrum.md](docs/Daily_Scrum.md) | Agile-style development reflections across the project timeline. |
 
@@ -153,19 +164,11 @@ External assets are recorded in [docs/Asset_Credits.md](docs/Asset_Credits.md), 
 
 ## Build Information
 
-The game is developed using:
-
-- Unity `2022.3.62f3 LTS`
-- 3D Built-in Render Pipeline
+- Unity version: `2022.3.62f3 LTS`
+- Render pipeline: 3D Built-in Render Pipeline
 - Target platform: Windows
-- Current run path: Unity Editor through `Assets/Scenes/MainMenu.unity`
-
-A packaged Windows build is available from the GitHub Releases page:
-
-- [ShadowPath v1.0.0](https://github.com/ColdFF/FF_GamePro/releases/tag/v1.0.0)
-- Release asset: `ShadowPath_Windows_v1.0.0.zip`
-
-To run the release build, download and extract the zip file, then launch the ShadowPath executable inside the extracted folder.
+- Packaged build: `ShadowPath_Windows_v1.0.0.zip` on the [ShadowPath v1.0.0 release](https://github.com/ColdFF/FF_GamePro/releases/tag/v1.0.0)
+- Unity editor entry scene: `Assets/Scenes/MainMenu.unity`
 
 ## License
 
